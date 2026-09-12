@@ -1,0 +1,84 @@
+name: API and database quality gate
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: API and PostgreSQL quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: kids_fashion
+          POSTGRES_USER: kids_fashion
+          POSTGRES_PASSWORD: kids_fashion_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U kids_fashion -d kids_fashion"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://kids_fashion:kids_fashion_ci@localhost:5432/kids_fashion?schema=public
+      DEMO_PASSWORD: ChangeMe123!
+      NODE_ENV: test
+      PORT: 8080
+      WEB_ORIGIN: http://localhost:3000
+      JWT_ACCESS_SECRET: ci-only-secret-with-at-least-32-bytes-change-me
+      JWT_ISSUER: kids-fashion-api
+      JWT_AUDIENCE: kids-fashion-web
+      ACCESS_TOKEN_TTL_SECONDS: 900
+      REFRESH_TOKEN_TTL_HOURS: 24
+      REMEMBER_REFRESH_TOKEN_TTL_DAYS: 30
+      REMEMBER_REFRESH_INACTIVITY_DAYS: 7
+      MAX_CART_ITEM_QTY: 99
+      COOKIE_SECURE: false
+      SHIPPING_FALLBACK_FEE: 30000
+      SHIPPING_QUOTE_TTL_SECONDS: 300
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install locked dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate and generate Prisma client
+        run: pnpm db:validate && pnpm db:generate
+
+      - name: Apply migrations and seed
+        run: pnpm db:migrate:deploy && pnpm db:seed
+
+      - name: Lint, test and build API
+        run: |
+          pnpm --filter api lint
+          pnpm --filter api test
+          pnpm --filter api test:e2e
+          pnpm --filter api test:db
+          pnpm --filter api build

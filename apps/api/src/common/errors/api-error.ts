@@ -1,0 +1,60 @@
+import { HttpException, HttpStatus } from '@nestjs/common';
+
+export type ApiErrorCode =
+  | 'VALIDATION_ERROR'
+  | 'INVALID_CREDENTIALS'
+  | 'INVALID_SESSION'
+  | 'FORBIDDEN'
+  | 'NOT_FOUND'
+  | 'REGISTRATION_FAILED'
+  | 'RATE_LIMITED'
+  | 'SERVICE_UNAVAILABLE'
+  | 'HTTP_ERROR'
+  | 'INTERNAL_ERROR'
+  | 'USER_NOT_FOUND'
+  | 'INVALID_ROLE'
+  | 'USER_ALREADY_DISABLED'
+  | 'USER_ALREADY_ACTIVE'
+  | 'ROLE_UNCHANGED'
+  | 'CANNOT_DISABLE_SELF'
+  | 'CANNOT_MODIFY_SELF_ROLE'
+  | 'LAST_ADMIN_PROTECTION'
+  | 'CATALOG_ACTIVATION_BLOCKED'
+  | 'PRODUCT_STATUS_UNCHANGED'
+  | 'VARIANT_STATUS_UNCHANGED'
+  | 'CATALOG_MASTER_CONFLICT'
+  | 'INVENTORY_VARIANT_NOT_FOUND'
+  | 'INVENTORY_WAREHOUSE_NOT_FOUND'
+  | 'INVENTORY_NOOP'
+  | 'INVENTORY_TARGET_BELOW_RESERVED'
+  | 'INVENTORY_WAREHOUSE_UNAVAILABLE'
+  | 'INVENTORY_INSUFFICIENT'
+  | 'CART_EMPTY'
+  | 'CART_ITEM_NOT_FOUND'
+  | 'CART_QUANTITY_INVALID'
+  | 'CART_QUANTITY_LIMIT_EXCEEDED'
+  | 'VARIANT_NOT_FOUND'
+  | 'VARIANT_NOT_SELLABLE'
+  | 'OUT_OF_STOCK'
+  | 'INSUFFICIENT_AVAILABLE_STOCK'
+  | 'CART_CONFLICT'
+  | 'SHIPPING_QUOTE_STALE'
+  | 'INVALID_ORDER_TRANSITION'
+  | 'PAID_ORDER_CANNOT_CANCEL';
+
+export type ApiErrorResponse = {
+  statusCode: number;
+  code: ApiErrorCode;
+  message: string;
+  requestId?: string;
+};
+
+export class ApiException extends HttpException {
+  constructor(
+    status: HttpStatus,
+    readonly code: ApiErrorCode,
+    readonly publicMessage: string,
+  ) {
+    super(publicMessage, status);
+  }
+}

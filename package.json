@@ -1,26 +1,35 @@
 {
-  "name": "frontend",
+  "name": "kids-fashion-ecommerce",
   "version": "0.1.0",
   "private": true,
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=11 <12"
+  },
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "start": "next start",
-    "lint": "eslint"
-  },
-  "dependencies": {
-    "next": "16.3.1",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
-  },
-  "devDependencies": {
-    "@tailwindcss/postcss": "^4",
-    "@types/node": "^20",
-    "@types/react": "^19",
-    "@types/react-dom": "^19",
-    "eslint": "^9",
-    "eslint-config-next": "16.3.1",
-    "tailwindcss": "^4",
-    "typescript": "^5"
+    "dev": "pnpm --parallel --filter web --filter api run dev",
+    "dev:web": "pnpm --filter web dev",
+    "dev:api": "pnpm --filter api dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "test:e2e": "pnpm --filter api test:e2e",
+    "test:db": "pnpm --filter api test:db",
+    "test:db:rehearsal": "pnpm --filter api test:db:rehearsal",
+    "typecheck": "pnpm --filter web typecheck && pnpm --filter api build",
+    "verify": "pnpm lint && pnpm test && pnpm typecheck && pnpm build",
+    "verify:db": "pnpm db:validate && pnpm db:migrate:deploy && pnpm db:seed && pnpm test:db",
+    "db:up": "docker compose up -d postgres",
+    "db:down": "docker compose down",
+    "db:logs": "docker compose logs -f postgres",
+    "db:format": "pnpm --filter api db:format",
+    "db:validate": "pnpm --filter api db:validate",
+    "db:generate": "pnpm --filter api db:generate",
+    "db:status": "pnpm --filter api db:status",
+    "db:migrate": "pnpm --filter api db:migrate:dev",
+    "db:migrate:deploy": "pnpm --filter api db:migrate:deploy",
+    "db:migrate:reset": "pnpm --filter api db:migrate:reset",
+    "db:seed": "pnpm --filter api db:seed"
   }
 }
