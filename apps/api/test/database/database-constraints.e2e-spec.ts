@@ -28,11 +28,43 @@ describe('Database constraints (e2e)', () => {
     const [roles, users, products, variants, inventories, ledgerEntries] =
       await Promise.all([
         prisma.role.count(),
-        prisma.user.count(),
-        prisma.product.count(),
-        prisma.productVariant.count(),
-        prisma.inventory.count(),
-        prisma.inventoryTransaction.count(),
+        prisma.user.count({
+          where: {
+            email: {
+              in: [
+                'customer@mam-nho.local',
+                'disabled-customer@mam-nho.local',
+                'sales@mam-nho.local',
+                'warehouse@mam-nho.local',
+                'admin@mam-nho.local',
+              ],
+            },
+          },
+        }),
+        prisma.product.count({
+          where: {
+            slug: {
+              in: [
+                'set-ao-khoac-coral',
+                'set-so-mi-sage',
+                'romper-muslin-apricot',
+              ],
+            },
+          },
+        }),
+        prisma.productVariant.count({
+          where: {
+            sku: { in: ['MAM-CORAL-90', 'MAM-SAGE-100', 'MAM-APRICOT-70'] },
+          },
+        }),
+        prisma.inventory.count({
+          where: {
+            variant: {
+              sku: { in: ['MAM-CORAL-90', 'MAM-SAGE-100', 'MAM-APRICOT-70'] },
+            },
+          },
+        }),
+        prisma.inventoryTransaction.count({ where: { referenceType: 'SEED' } }),
       ]);
 
     expect({
@@ -59,13 +91,25 @@ describe('Database constraints (e2e)', () => {
     }
 
     const users = await prisma.user.findMany({
+      where: {
+        email: {
+          in: [
+            'customer@mam-nho.local',
+            'disabled-customer@mam-nho.local',
+            'sales@mam-nho.local',
+            'warehouse@mam-nho.local',
+            'admin@mam-nho.local',
+          ],
+        },
+      },
       select: { passwordHash: true },
     });
     const verificationResults = await Promise.all(
       users.map((user) => verifyPassword(user.passwordHash, demoPassword)),
     );
 
-    expect(verificationResults).toEqual([true, true, true, true, true]);
+    expect(verificationResults).toHaveLength(5);
+    expect(verificationResults.every(Boolean)).toBe(true);
   });
 
   it('rejects a duplicate user email', async () => {

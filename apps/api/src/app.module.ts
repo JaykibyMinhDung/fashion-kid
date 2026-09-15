@@ -19,6 +19,10 @@ import { CartModule } from './modules/cart/cart.module';
 import { ShippingModule } from './modules/shipping/shipping.module';
 import { CheckoutModule } from './modules/checkout/checkout.module';
 import { OrdersModule } from './modules/orders/orders.module';
+import { PromotionsModule } from './modules/promotions/promotions.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { AuditModule } from './modules/audit/audit.module';
+import { ReportingModule } from './modules/reporting/reporting.module';
 
 @Module({
   imports: [
@@ -37,6 +41,10 @@ import { OrdersModule } from './modules/orders/orders.module';
     ShippingModule,
     CheckoutModule,
     OrdersModule,
+    PromotionsModule,
+    ReviewsModule,
+    AuditModule,
+    ReportingModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 1_000 }]),
   ],
   controllers: [AppController],

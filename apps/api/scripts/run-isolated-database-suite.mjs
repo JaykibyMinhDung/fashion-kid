@@ -39,7 +39,12 @@ isolatedUrl.searchParams.set('schema', 'public');
 
 const adminClient = new Client({ connectionString: baseConnectionString });
 const pnpmExecutable = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
-const pnpmCli = process.env.npm_execpath;
+const pnpmExecPath = process.env.npm_execpath;
+// npm_execpath may point to a native pnpm launcher (ELF), not a JS CLI.
+// Only pass it through Node when it is actually a JavaScript entrypoint.
+const pnpmCli = pnpmExecPath && /\.(?:mjs|cjs|js)$/i.test(pnpmExecPath)
+  ? pnpmExecPath
+  : undefined;
 
 function runScript(script) {
   const command = pnpmCli ? process.execPath : pnpmExecutable;

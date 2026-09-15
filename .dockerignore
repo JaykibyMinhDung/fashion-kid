@@ -1,0 +1,11 @@
+node_modules
+.pnpm-store
+.git
+.next
+coverage
+dist
+.runtime
+**/.env
+**/.env.*
+!**/.env.example
+apps/api/src/generated

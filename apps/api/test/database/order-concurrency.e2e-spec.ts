@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
-import { ConflictException } from '@nestjs/common';
+import { ApiException } from '../../src/common/errors/api-error';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
   EntityStatus,
@@ -287,7 +287,8 @@ describe('Order Lifecycle Concurrency & Race Conditions (database)', () => {
 
     const rejectedItem = rejected[0] as unknown as
       { reason: unknown } | undefined;
-    expect(rejectedItem?.reason).toBeInstanceOf(ConflictException);
+    expect(rejectedItem?.reason).toBeInstanceOf(ApiException);
+    expect((rejectedItem?.reason as ApiException).getStatus()).toBe(409);
 
     // Verify exactly 1 history row was created
     const histories = await prisma.orderStatusHistory.findMany({
@@ -321,7 +322,8 @@ describe('Order Lifecycle Concurrency & Race Conditions (database)', () => {
 
     const rejectedItem = rejected[0] as unknown as
       { reason: unknown } | undefined;
-    expect(rejectedItem?.reason).toBeInstanceOf(ConflictException);
+    expect(rejectedItem?.reason).toBeInstanceOf(ApiException);
+    expect((rejectedItem?.reason as ApiException).getStatus()).toBe(409);
 
     const finalOrder = await prisma.order.findUniqueOrThrow({
       where: { id: orderId },
@@ -347,7 +349,8 @@ describe('Order Lifecycle Concurrency & Race Conditions (database)', () => {
 
     const rejectedItem = rejected[0] as unknown as
       { reason: unknown } | undefined;
-    expect(rejectedItem?.reason).toBeInstanceOf(ConflictException);
+    expect(rejectedItem?.reason).toBeInstanceOf(ApiException);
+    expect((rejectedItem?.reason as ApiException).getStatus()).toBe(409);
 
     const salesLedgers = await prisma.inventoryTransaction.findMany({
       where: {
@@ -375,7 +378,8 @@ describe('Order Lifecycle Concurrency & Race Conditions (database)', () => {
 
     const rejectedItem = rejected[0] as unknown as
       { reason: unknown } | undefined;
-    expect(rejectedItem?.reason).toBeInstanceOf(ConflictException);
+    expect(rejectedItem?.reason).toBeInstanceOf(ApiException);
+    expect((rejectedItem?.reason as ApiException).getStatus()).toBe(409);
 
     const collectedTx = await prisma.paymentTransaction.findMany({
       where: {

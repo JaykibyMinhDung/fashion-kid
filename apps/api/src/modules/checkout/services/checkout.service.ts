@@ -1,10 +1,12 @@
 import {
   ConflictException,
+  HttpStatus,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
 import {
+  CouponType,
   EntityStatus,
   OrderStatus,
   PaymentMethod,
@@ -17,6 +19,7 @@ import {
   VariantStatus,
 } from '../../../generated/prisma/client';
 import { PrismaService } from '../../../database/prisma/prisma.service';
+import { ApiException } from '../../../common/errors/api-error';
 import {
   InsufficientInventoryError,
   InventoryRepository,
@@ -159,7 +162,15 @@ export class CheckoutService {
           );
 
           const shippingFee = shippingQuote.fee;
-          const discountAmount = 0n;
+          const coupon = dto.couponCode
+            ? await this.resolveCouponForCheckout(
+                tx,
+                dto.couponCode,
+                userId,
+                itemsSubtotal,
+              )
+            : null;
+          const discountAmount = coupon?.discountAmount ?? 0n;
           const totalAmount = itemsSubtotal + shippingFee - discountAmount;
 
           // 7. Resolve active warehouse for inventory reservation
@@ -278,6 +289,19 @@ export class CheckoutService {
             },
           });
 
+          // Coupon usage is append-only and is committed with the order/reservation/payment.
+          if (coupon) {
+            await tx.couponUsage.create({
+              data: {
+                couponId: coupon.id,
+                userId,
+                orderId: order.id,
+                couponCodeSnapshot: coupon.code,
+                discountAmount: coupon.discountAmount,
+              },
+            });
+          }
+
           // 11. Clear Cart items upon successful checkout commit
           await tx.cartItem.deleteMany({
             where: { cartId: cart.id },
@@ -344,5 +368,97 @@ export class CheckoutService {
       }
       throw error;
     }
+  }
+
+  private async resolveCouponForCheckout(
+    tx: Prisma.TransactionClient,
+    inputCode: string,
+    userId: string,
+    itemsSubtotal: bigint,
+  ): Promise<{ id: string; code: string; discountAmount: bigint }> {
+    const code = inputCode.trim().toUpperCase();
+    if (!code) {
+      throw new ApiException(
+        HttpStatus.BAD_REQUEST,
+        'PROMOTION_VALIDATION_FAILED',
+        'Mã giảm giá không hợp lệ',
+      );
+    }
+
+    // Serialize all usage-limit checks and the following CouponUsage insert.
+    await tx.$queryRaw`SELECT id FROM coupons WHERE code = ${code} FOR UPDATE`;
+    const coupon = await tx.coupon.findUnique({ where: { code } });
+    if (!coupon) {
+      throw new ApiException(
+        HttpStatus.NOT_FOUND,
+        'COUPON_NOT_FOUND',
+        'Không tìm thấy mã giảm giá',
+      );
+    }
+
+    const now = new Date();
+    if (coupon.status !== EntityStatus.ACTIVE)
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        'COUPON_DISABLED',
+        'Mã giảm giá đang bị vô hiệu hóa',
+      );
+    if (coupon.startsAt > now)
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        'COUPON_NOT_STARTED',
+        'Mã giảm giá chưa có hiệu lực',
+      );
+    if (coupon.endsAt <= now)
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        'COUPON_EXPIRED',
+        'Mã giảm giá đã hết hạn',
+      );
+    if (itemsSubtotal < coupon.minOrderAmount)
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        'COUPON_MIN_ORDER_NOT_MET',
+        'Đơn hàng chưa đạt giá trị tối thiểu để áp dụng mã',
+      );
+
+    const [usageCount, userUsageCount] = await Promise.all([
+      tx.couponUsage.count({ where: { couponId: coupon.id } }),
+      tx.couponUsage.count({ where: { couponId: coupon.id, userId } }),
+    ]);
+    if (coupon.usageLimit !== null && usageCount >= coupon.usageLimit)
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        'COUPON_USAGE_LIMIT_REACHED',
+        'Mã giảm giá đã hết lượt sử dụng',
+      );
+    if (coupon.perUserLimit !== null && userUsageCount >= coupon.perUserLimit)
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        'COUPON_USER_LIMIT_REACHED',
+        'Bạn đã dùng hết lượt áp dụng mã này',
+      );
+
+    let discountAmount: bigint;
+    if (coupon.type === CouponType.FIXED_AMOUNT) {
+      discountAmount = coupon.value;
+    } else {
+      discountAmount = (itemsSubtotal * coupon.value) / 100n;
+      if (coupon.maxDiscountAmount !== null)
+        discountAmount =
+          discountAmount > coupon.maxDiscountAmount
+            ? coupon.maxDiscountAmount
+            : discountAmount;
+    }
+    discountAmount =
+      discountAmount > itemsSubtotal ? itemsSubtotal : discountAmount;
+    if (discountAmount < 0n) {
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        'COUPON_INVALID_VALUE',
+        'Giá trị mã giảm giá không hợp lệ',
+      );
+    }
+    return { id: coupon.id, code: coupon.code, discountAmount };
   }
 }

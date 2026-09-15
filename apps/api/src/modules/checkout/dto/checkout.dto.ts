@@ -53,6 +53,18 @@ export class CreateOrderCheckoutRequestDto {
   @IsString()
   @MaxLength(500, { message: 'Ghi chú đơn hàng tối đa 500 ký tự' })
   customerNote?: string | null;
+
+  @ApiPropertyOptional({
+    maxLength: 50,
+    description:
+      'Mã giảm giá; backend tự chuẩn hóa và tính giảm giá từ giỏ hàng',
+    example: 'KID50K',
+  })
+  @Transform(trimOptionalString)
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  couponCode?: string | null;
 }
 
 export class CheckoutOrderItemResponseDto {
