@@ -1,41 +1,93 @@
-import { ShieldCheck } from "lucide-react";
+'use client';
 
-import { Card, CardContent } from "@/components/ui/card";
-import { PageHeader } from "@/components/ui/page-header";
-import { RoutePlaceholder } from "@/components/shared/route-placeholder";
+import { ClipboardList, LoaderCircle, ShoppingCart } from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
+
+import { ButtonLink } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { PageHeader } from '@/components/ui/page-header';
+import { StatCard } from '@/components/ui/stat-card';
+import { useAuth } from '@/features/auth/session/auth-provider';
+import { getOperationalOrders } from '@/features/orders/api/order-client';
+
+type DashboardStats = {
+  pendingCount: number;
+  confirmedCount: number;
+};
 
 export default function SalesDashboardPage() {
+  const { authorizedRequest } = useAuth();
+  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const loadStats = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const [pendingRes, confirmedRes] = await Promise.all([
+        getOperationalOrders(authorizedRequest, { status: 'PENDING', limit: 1 }),
+        getOperationalOrders(authorizedRequest, { status: 'CONFIRMED', limit: 1 }),
+      ]);
+      setStats({
+        pendingCount: pendingRes.total,
+        confirmedCount: confirmedRes.total,
+      });
+    } catch {
+      setError('Không thể tải dữ liệu. Vui lòng thử lại.');
+    } finally {
+      setLoading(false);
+    }
+  }, [authorizedRequest]);
+
+  useEffect(() => {
+    void loadStats();
+  }, [loadStats]);
+
   return (
     <div className="space-y-8">
       <PageHeader
         eyebrow="Sales Staff"
         title="Vận hành bán hàng"
-        description="Portal Sales đã được tách layout và navigation, nhưng nghiệp vụ Order chưa được triển khai trước khi tài liệu day tương ứng hoàn tất."
+        description="Tổng quan đơn hàng cần xử lý hôm nay."
       />
-      <Card className="bg-[#fbf2e7] shadow-none">
-        <CardContent className="flex gap-4">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white text-[#a36b34]">
-            <ShieldCheck className="size-5" />
-          </span>
-          <div>
-            <h2 className="font-bold">Ranh giới role đã sẵn sàng</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              Sales không có quyền chỉnh Product hoặc Inventory. Route Order Queue sẽ được mở khi contract Order được freeze.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
-      <RoutePlaceholder
-        eyebrow="Roadmap có kiểm soát"
-        title="Order Queue chưa mở"
-        description="Không giả định transition hoặc response shape trước tài liệu."
-        checklist={[
-          "Giữ riêng action Confirm/Cancel của Sales",
-          "Dùng chung Order Detail từ feature/order",
-          "Backend permission là security boundary",
-        ]}
-        documentStatus="Chờ tài liệu Order"
-      />
+
+      {loading ? (
+        <div className="flex items-center justify-center py-16 text-muted">
+          <LoaderCircle className="animate-spin" />
+          <span className="ml-2 text-sm">Đang tải dữ liệu…</span>
+        </div>
+      ) : error ? (
+        <Card className="bg-rose-50 shadow-none">
+          <CardContent>
+            <p className="text-sm text-rose-700">{error}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2">
+          <StatCard
+            label="Chờ xác nhận"
+            value={String(stats!.pendingCount).padStart(2, '0')}
+            detail="Đơn hàng mới chưa được xác nhận."
+            icon={ShoppingCart}
+          />
+          <StatCard
+            label="Đã xác nhận"
+            value={String(stats!.confirmedCount).padStart(2, '0')}
+            detail="Đơn hàng đã xác nhận, chờ đóng gói."
+            icon={ClipboardList}
+          />
+        </div>
+      )}
+
+      <div className="flex flex-wrap gap-3">
+        <ButtonLink href="/sales/orders?status=PENDING" variant="primary" size="md">
+          Xem đơn chờ xác nhận
+        </ButtonLink>
+        <ButtonLink href="/sales/orders?status=CONFIRMED" variant="outline" size="md">
+          Xem đơn đã xác nhận
+        </ButtonLink>
+      </div>
     </div>
   );
 }

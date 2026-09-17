@@ -30,10 +30,12 @@ export const adminNavigation: NavigationItem[] = [
 export const salesNavigation: NavigationItem[] = [
   { label: "Tổng quan", href: "/sales/dashboard", icon: "home" },
   { label: "Đơn hàng", href: "/sales/orders", icon: "receipt" },
+  { label: "Khách hàng", href: "/sales/customers", icon: "users" },
 ];
 
 export const warehouseNavigation: NavigationItem[] = [
   { label: "Tổng quan", href: "/warehouse/dashboard", icon: "home" },
   { label: "Đơn hàng", href: "/warehouse/orders", icon: "receipt" },
   { label: "Tồn kho", href: "/warehouse/inventory", icon: "warehouse" },
+  { label: "Packing Queue", href: "/warehouse/packing", icon: "box" },
 ];

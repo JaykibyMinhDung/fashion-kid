@@ -4,7 +4,8 @@ import Link from "next/link";
 
 import { ButtonLink } from "@/components/ui/button";
 import { ProductCard } from "@/features/catalog/components/product-card";
-import { featuredProducts } from "@/features/catalog/data/mock-products";
+import { getProducts } from "@/features/catalog/api/catalog-client";
+import type { CatalogProductCard } from "@/features/catalog/api/catalog-client";
 
 const categories = [
   {
@@ -36,7 +37,16 @@ const commitments = [
   { icon: Truck, title: "Giao hàng toàn quốc", detail: "Theo dõi đơn hàng rõ ràng" },
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  let featuredProducts: CatalogProductCard[] = [];
+  try {
+    const result = await getProducts({ limit: 6, sort: "newest" });
+    featuredProducts = result.items;
+  } catch {
+    // API unavailable — render empty section gracefully
+    featuredProducts = [];
+  }
+
   return (
     <>
       <section className="mx-auto max-w-[1440px] px-4 pt-5 sm:px-6 lg:px-8">
@@ -99,22 +109,24 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-strong">Mới về tuần này</p>
-            <h2 className="mt-2 text-3xl font-black tracking-[-0.04em] sm:text-4xl">Bé mặc đẹp, mẹ chọn nhanh</h2>
+      {featuredProducts.length > 0 && (
+        <section className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-brand-strong">Mới về tuần này</p>
+              <h2 className="mt-2 text-3xl font-black tracking-[-0.04em] sm:text-4xl">Bé mặc đẹp, mẹ chọn nhanh</h2>
+            </div>
+            <ButtonLink href="/products" variant="ghost">
+              Xem tất cả <ArrowRight className="size-4" />
+            </ButtonLink>
           </div>
-          <ButtonLink href="/products" variant="ghost">
-            Xem tất cả <ArrowRight className="size-4" />
-          </ButtonLink>
-        </div>
-        <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
-      </section>
+          <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        </section>
+      )}
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid gap-5 rounded-[2rem] border border-border bg-surface p-6 shadow-[0_20px_70px_rgba(75,58,42,0.07)] md:grid-cols-3 md:p-8">

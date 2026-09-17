@@ -1,5 +1,26 @@
-import { RoutePlaceholder } from "@/components/shared/route-placeholder";
+import { Plus } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { PageHeader } from '@/components/ui/page-header';
+import { AdminCategoriesList } from '@/features/catalog/components/admin-categories-list';
 
 export default function CategoriesPage() {
-  return <RoutePlaceholder eyebrow="Admin · Catalog" title="Danh mục sản phẩm" description="Master data cơ bản phục vụ phân nhóm sản phẩm và bộ lọc storefront." checklist={["Danh sách Category với search và trạng thái", "Tạo/chỉnh sửa tên và slug", "Disable thay vì hard delete khi đã được tham chiếu"]} documentStatus="Đã dựng route" />;
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        eyebrow="Admin · Catalog"
+        title="Danh mục sản phẩm"
+        description="Master data phục vụ phân nhóm sản phẩm và bộ lọc storefront."
+        action={
+          <Button
+            type="button"
+            onClick={() => alert('Chức năng tạo danh mục đang phát triển.')}
+          >
+            <Plus className="size-4" /> Thêm danh mục
+          </Button>
+        }
+      />
+      <AdminCategoriesList />
+    </div>
+  );
 }
