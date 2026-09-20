@@ -10,6 +10,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { BlobResponse } from "@/lib/api/api-client";
 import {
   type AuthClient,
   createAuthClient,
@@ -32,6 +33,7 @@ export type AuthContextValue = {
   changePassword(input: ChangePasswordInput): Promise<void>;
   synchronizeCurrentUser(user: PublicUser): void;
   authorizedRequest<T>(path: `/${string}`, init?: RequestInit): Promise<T>;
+  authorizedBlobRequest?(path: `/${string}`, init?: RequestInit): Promise<BlobResponse>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -117,6 +119,22 @@ export function AuthProvider({
     [client],
   );
 
+  const authorizedBlobRequest = useCallback(
+    async (path: `/${string}`, init: RequestInit = {}) => {
+      try {
+        if (client.authorizedBlobRequest) {
+          return await client.authorizedBlobRequest(path, init);
+        }
+        throw new Error("authorizedBlobRequest is not supported by client");
+      } finally {
+        const refreshedUser = client.getCurrentUser();
+        setUser(refreshedUser);
+        setStatus(refreshedUser ? "authenticated" : "anonymous");
+      }
+    },
+    [client],
+  );
+
   const synchronizeCurrentUser = useCallback(
     (updatedUser: PublicUser) => {
       client.synchronizeCurrentUser(updatedUser);
@@ -136,6 +154,7 @@ export function AuthProvider({
       changePassword,
       synchronizeCurrentUser,
       authorizedRequest,
+      authorizedBlobRequest,
     }),
     [
       status,
@@ -146,6 +165,7 @@ export function AuthProvider({
       changePassword,
       synchronizeCurrentUser,
       authorizedRequest,
+      authorizedBlobRequest,
     ],
   );
 

@@ -13,6 +13,8 @@ const CUSTOMER_PERMISSIONS = [
   'ORDER_CANCEL_OWN',
   'REVIEW_CREATE',
   'REVIEW_UPDATE_OWN',
+  'WISHLIST_READ_OWN',
+  'WISHLIST_WRITE_OWN',
 ] as const satisfies readonly Permission[];
 
 const SALES_PERMISSIONS = [

@@ -1,5 +1,6 @@
 import {
   ConflictException,
+  HttpStatus,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -17,6 +18,7 @@ import {
   VariantStatus,
 } from '../../../generated/prisma/client';
 import { PrismaService } from '../../../database/prisma/prisma.service';
+import { ApiException } from '../../../common/errors/api-error';
 import {
   InsufficientInventoryError,
   InventoryRepository,
@@ -24,10 +26,19 @@ import {
 } from '../../inventory/repositories/inventory.repository';
 import { ShippingService } from '../../shipping/services/shipping.service';
 import {
+  evaluateCoupon,
+  type CouponReasonCode,
+} from '../../promotion/domain/coupon.calculator';
+import {
   CheckoutOrderResponseDto,
   CreateOrderCheckoutRequestDto,
 } from '../dto/checkout.dto';
 import { OrderCounterService } from './order-counter.service';
+import { InvoiceService } from '../../billing/services/invoice.service';
+import { TaxConfigService } from '../../billing/services/tax-config.service';
+import { extractVat } from '../../billing/domain/vat.calculator';
+import { OutboxService } from '../../notification/services/outbox.service';
+import { ConfigService } from '@nestjs/config';
 
 const MAIN_WAREHOUSE_CODE = 'MAIN_WAREHOUSE';
 
@@ -38,6 +49,10 @@ export class CheckoutService {
     private readonly orderCounterService: OrderCounterService,
     private readonly shippingService: ShippingService,
     private readonly inventoryRepository: InventoryRepository,
+    private readonly invoiceService: InvoiceService,
+    private readonly taxConfigService: TaxConfigService,
+    private readonly outboxService: OutboxService,
+    private readonly configService: ConfigService,
   ) {}
 
   async checkoutCod(
@@ -131,6 +146,40 @@ export class CheckoutService {
             totalWeightGrams += (item.variant.weightGrams ?? 0) * item.quantity;
           }
 
+          // 5b. Validate & lock coupon (Day 11 §10, §12).
+          // Lock the coupon row FOR UPDATE and hold it until CouponUsage insert
+          // so usage limits are race-safe within this transaction.
+          let discountAmount = 0n;
+          let appliedCoupon: { id: string; code: string } | null = null;
+          if (dto.couponCode) {
+            const coupon = await tx.coupon.findUnique({
+              where: { code: dto.couponCode },
+            });
+            if (!coupon) {
+              throw new ApiException(
+                HttpStatus.NOT_FOUND,
+                'COUPON_NOT_FOUND',
+                'Mã giảm giá không tồn tại',
+              );
+            }
+            await tx.$queryRaw`SELECT id FROM coupons WHERE id = ${coupon.id}::uuid FOR UPDATE`;
+            const [globalUsageCount, userUsageCount] = await Promise.all([
+              tx.couponUsage.count({ where: { couponId: coupon.id } }),
+              tx.couponUsage.count({ where: { couponId: coupon.id, userId } }),
+            ]);
+            const evaluation = evaluateCoupon(coupon, {
+              itemsSubtotal,
+              now: new Date(),
+              globalUsageCount,
+              userUsageCount,
+            });
+            if (!evaluation.eligible) {
+              throw this.couponError(evaluation.reasonCode);
+            }
+            discountAmount = evaluation.discountAmount;
+            appliedCoupon = { id: coupon.id, code: coupon.code };
+          }
+
           // 6. Accept only a signed, unexpired quote for this exact cart/address.
           const shippingParams = {
             toAddress: {
@@ -159,8 +208,12 @@ export class CheckoutService {
           );
 
           const shippingFee = shippingQuote.fee;
-          const discountAmount = 0n;
           const totalAmount = itemsSubtotal + shippingFee - discountAmount;
+          const taxRateBps = this.taxConfigService.getDefaultTaxRateBps();
+          const { net: netAmount, vat: taxAmount } = extractVat(
+            totalAmount,
+            taxRateBps,
+          );
 
           // 7. Resolve active warehouse for inventory reservation
           const warehouse = await tx.warehouse.findFirst({
@@ -214,8 +267,14 @@ export class CheckoutService {
               discountAmount,
               shippingFee,
               totalAmount,
+              taxRateBps,
+              taxAmount,
+              netAmount,
               currency: 'VND',
-              paymentMethod: PaymentMethod.COD,
+              paymentMethod:
+                dto.paymentMethod === 'ONLINE'
+                  ? PaymentMethod.ONLINE
+                  : PaymentMethod.COD,
               shippingProvider: shippingQuote.provider ?? 'STANDARD_FALLBACK',
               shippingServiceCode: shippingQuote.serviceCode ?? 'STANDARD',
               shippingServiceName:
@@ -252,13 +311,20 @@ export class CheckoutService {
                   fromStatus: null,
                   toStatus: OrderStatus.PENDING,
                   changedBy: userId,
-                  note: 'Đặt hàng thành công với hình thức COD',
+                  note:
+                    dto.paymentMethod === 'ONLINE'
+                      ? 'Đặt hàng thành công với hình thức thanh toán trực tuyến (VNPay)'
+                      : 'Đặt hàng thành công với hình thức COD',
                 },
               },
               payment: {
                 create: {
-                  method: PaymentMethod.COD,
+                  method:
+                    dto.paymentMethod === 'ONLINE'
+                      ? PaymentMethod.ONLINE
+                      : PaymentMethod.COD,
                   status: PaymentStatus.PENDING,
+                  provider: dto.paymentMethod === 'ONLINE' ? 'VNPAY' : 'COD',
                   amount: totalAmount,
                   currency: 'VND',
                   transactions: {
@@ -266,7 +332,10 @@ export class CheckoutService {
                       type: PaymentTxType.PAYMENT_CREATED,
                       status: PaymentTxStatus.PENDING,
                       amount: totalAmount,
-                      attemptRef: `${orderId}-COD-INIT`,
+                      attemptRef:
+                        dto.paymentMethod === 'ONLINE'
+                          ? `${orderId}-ONLINE-INIT`
+                          : `${orderId}-COD-INIT`,
                     },
                   },
                 },
@@ -275,8 +344,84 @@ export class CheckoutService {
             include: {
               items: true,
               payment: true,
+              user: true,
             },
           });
+
+          // 10b. Consume coupon usage in the same transaction (Day 11 §10).
+          if (appliedCoupon) {
+            await tx.couponUsage.create({
+              data: {
+                couponId: appliedCoupon.id,
+                userId,
+                orderId,
+                couponCodeSnapshot: appliedCoupon.code,
+                discountAmount,
+              },
+            });
+          }
+
+          // 10c. Issue internal sales invoice / receipt within the same transaction (Day 29)
+          const invoice = await this.invoiceService.issueForOrder(tx, order);
+
+          // 10d. Enqueue invoice email into outbox (Day 30 - Outbox Pattern)
+          const appPublicUrl = this.configService.get<string>(
+            'APP_PUBLIC_URL',
+            'http://localhost:3000',
+          );
+          const customerEmail =
+            order.user?.email ??
+            (
+              await tx.user.findUnique({
+                where: { id: userId },
+                select: { email: true },
+              })
+            )?.email;
+
+          if (customerEmail) {
+            await this.outboxService.enqueue(tx, {
+              dedupeKey: `INVOICE_ISSUED:${invoice.id}`,
+              toEmail: customerEmail,
+              template: 'invoice-issued',
+              payload: {
+                invoiceId: invoice.id,
+                invoiceNumber: invoice.invoiceNumber,
+                orderId: order.id,
+                orderNumber: order.orderNumber,
+                customerName: order.receiverName,
+                issuedAt: invoice.issuedAt.toLocaleDateString('vi-VN'),
+                items: cart.items.map((i) => ({
+                  productName: i.variant.product.name,
+                  colorName: i.variant.color.name,
+                  sizeName: i.variant.size.name,
+                  quantity: i.quantity,
+                  unitPriceFormatted: Number(i.variant.price).toLocaleString(
+                    'vi-VN',
+                  ),
+                  lineTotalFormatted: Number(
+                    i.variant.price * BigInt(i.quantity),
+                  ).toLocaleString('vi-VN'),
+                })),
+                itemsSubtotalFormatted: Number(
+                  order.itemsSubtotal,
+                ).toLocaleString('vi-VN'),
+                discountAmountFormatted:
+                  order.discountAmount > 0n
+                    ? Number(order.discountAmount).toLocaleString('vi-VN')
+                    : null,
+                shippingFeeFormatted: Number(order.shippingFee).toLocaleString(
+                  'vi-VN',
+                ),
+                taxAmountFormatted: Number(
+                  order.taxAmount ?? 0n,
+                ).toLocaleString('vi-VN'),
+                totalAmountFormatted: Number(order.totalAmount).toLocaleString(
+                  'vi-VN',
+                ),
+                invoiceUrl: `${appPublicUrl}/account/orders/${order.id}/invoice`,
+              },
+            });
+          }
 
           // 11. Clear Cart items upon successful checkout commit
           await tx.cartItem.deleteMany({
@@ -297,6 +442,9 @@ export class CheckoutService {
             discountAmount: order.discountAmount.toString(),
             shippingFee: order.shippingFee.toString(),
             totalAmount: order.totalAmount.toString(),
+            taxRateBps: order.taxRateBps,
+            taxAmount: order.taxAmount ? order.taxAmount.toString() : null,
+            netAmount: order.netAmount ? order.netAmount.toString() : null,
             customerNote: order.customerNote,
             items: order.items.map((item) => ({
               id: item.id,
@@ -343,6 +491,54 @@ export class CheckoutService {
         );
       }
       throw error;
+    }
+  }
+
+  private couponError(reason: CouponReasonCode): ApiException {
+    switch (reason) {
+      case 'DISABLED':
+        return new ApiException(
+          HttpStatus.BAD_REQUEST,
+          'COUPON_DISABLED',
+          'Mã giảm giá đã bị vô hiệu hoá',
+        );
+      case 'NOT_STARTED':
+        return new ApiException(
+          HttpStatus.BAD_REQUEST,
+          'COUPON_NOT_STARTED',
+          'Mã giảm giá chưa đến thời gian áp dụng',
+        );
+      case 'EXPIRED':
+        return new ApiException(
+          HttpStatus.BAD_REQUEST,
+          'COUPON_EXPIRED',
+          'Mã giảm giá đã hết hạn',
+        );
+      case 'MIN_ORDER_NOT_MET':
+        return new ApiException(
+          HttpStatus.BAD_REQUEST,
+          'COUPON_MIN_ORDER_NOT_MET',
+          'Đơn hàng chưa đạt giá trị tối thiểu để áp mã',
+        );
+      case 'USAGE_LIMIT_REACHED':
+        return new ApiException(
+          HttpStatus.CONFLICT,
+          'COUPON_USAGE_LIMIT_REACHED',
+          'Mã giảm giá đã hết lượt sử dụng',
+        );
+      case 'USER_LIMIT_REACHED':
+        return new ApiException(
+          HttpStatus.CONFLICT,
+          'COUPON_USER_LIMIT_REACHED',
+          'Bạn đã dùng hết lượt cho mã giảm giá này',
+        );
+      case 'NOT_FOUND':
+      default:
+        return new ApiException(
+          HttpStatus.BAD_REQUEST,
+          'COUPON_INVALID',
+          'Mã giảm giá không hợp lệ',
+        );
     }
   }
 }

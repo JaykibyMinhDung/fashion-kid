@@ -29,6 +29,7 @@ describe('Checkout and Shipping API (e2e)', () => {
   let addressId: string;
   let otherAddressId: string;
   let variantId: string;
+  let productId: string;
   let warehouseId: string;
   const suffix = randomUUID().slice(0, 8);
 
@@ -143,6 +144,8 @@ describe('Checkout and Shipping API (e2e)', () => {
       },
     });
 
+    productId = product.id;
+
     const variant = await prisma.productVariant.create({
       data: {
         productId: product.id,
@@ -171,6 +174,12 @@ describe('Checkout and Shipping API (e2e)', () => {
   });
 
   afterAll(async () => {
+    if (productId) {
+      await prisma.product.update({
+        where: { id: productId },
+        data: { status: ProductStatus.DISABLED },
+      });
+    }
     await app.close();
   });
 

@@ -42,8 +42,9 @@ const pnpmExecutable = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm';
 const pnpmCli = process.env.npm_execpath;
 
 function runScript(script) {
+  const extraArgs = script === suite && process.argv.length > 3 ? ['--', ...process.argv.slice(3)] : [];
   const command = pnpmCli ? process.execPath : pnpmExecutable;
-  const args = pnpmCli ? [pnpmCli, 'run', script] : ['run', script];
+  const args = pnpmCli ? [pnpmCli, 'run', script, ...extraArgs] : ['run', script, ...extraArgs];
   const result = spawnSync(command, args, {
     cwd: apiDirectory,
     env: {

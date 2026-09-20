@@ -1,15 +1,25 @@
 import {
   type AuthSession,
   type ChangePasswordInput,
+  type ForgotPasswordInput,
   type LoginInput,
   type PublicUser,
   type RegisterInput,
+  type ResendVerificationInput,
+  type ResetPasswordInput,
+  type VerifyEmailInput,
+  type VerifyOtpInput,
 } from "../contracts";
 import {
   type RefreshLockRunner,
   runWithRefreshLock,
 } from "../session/refresh-lock";
-import { ApiClientError, apiRequest } from "@/lib/api/api-client";
+import {
+  ApiClientError,
+  apiRequest,
+  apiBlobRequest,
+  type BlobResponse,
+} from "@/lib/api/api-client";
 
 export type AuthClient = {
   getCurrentUser(): PublicUser | null;
@@ -20,6 +30,7 @@ export type AuthClient = {
   logout(): Promise<void>;
   changePassword(input: ChangePasswordInput): Promise<void>;
   authorizedRequest<T>(path: `/${string}`, init?: RequestInit): Promise<T>;
+  authorizedBlobRequest?(path: `/${string}`, init?: RequestInit): Promise<BlobResponse>;
 };
 
 type AuthClientOptions = {
@@ -105,6 +116,41 @@ export function createAuthClient({
     }
   };
 
+  const authorizedBlobRequest = async (
+    path: `/${string}`,
+    init: RequestInit = {},
+  ): Promise<BlobResponse> => {
+    if (!accessToken) {
+      await refresh();
+    }
+
+    const execute = () => {
+      const headers = new Headers(init.headers);
+      if (accessToken) {
+        headers.set("authorization", `Bearer ${accessToken}`);
+      }
+      return apiBlobRequest(path, { ...init, headers }, fetchImplementation);
+    };
+
+    try {
+      return await execute();
+    } catch (error) {
+      if (!(error instanceof ApiClientError) || error.status !== 401) {
+        throw error;
+      }
+    }
+
+    await refresh();
+    try {
+      return await execute();
+    } catch (error) {
+      if (error instanceof ApiClientError && error.status === 401) {
+        clearSession();
+      }
+      throw error;
+    }
+  };
+
   return {
     getCurrentUser: () => currentUser,
     synchronizeCurrentUser(user) {
@@ -143,5 +189,55 @@ export function createAuthClient({
       clearSession();
     },
     authorizedRequest,
+    authorizedBlobRequest,
   };
+}
+
+export function forgotPassword(
+  input: ForgotPasswordInput,
+): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>("/api/v1/auth/forgot-password", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function verifyResetOtp(
+  input: VerifyOtpInput,
+): Promise<{ resetToken: string }> {
+  return apiRequest<{ resetToken: string }>(
+    "/api/v1/auth/reset-password/verify-otp",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function resetPassword(input: ResetPasswordInput): Promise<void> {
+  return apiRequest<void>("/api/v1/auth/reset-password", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
+}
+
+export function verifyEmail(
+  input: VerifyEmailInput,
+): Promise<{ success: boolean; message: string }> {
+  return apiRequest<{ success: boolean; message: string }>(
+    "/api/v1/auth/verify-email",
+    {
+      method: "POST",
+      body: JSON.stringify(input),
+    },
+  );
+}
+
+export function resendVerification(
+  input: ResendVerificationInput,
+): Promise<{ message: string }> {
+  return apiRequest<{ message: string }>("/api/v1/auth/resend-verification", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }

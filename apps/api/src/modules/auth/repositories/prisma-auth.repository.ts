@@ -26,6 +26,7 @@ const AUTH_USER_SELECT = {
   avatarUrl: true,
   status: true,
   authVersion: true,
+  emailVerifiedAt: true,
   role: { select: { code: true } },
 } satisfies Prisma.UserSelect;
 
@@ -76,6 +77,7 @@ function mapAuthUser(row: AuthUserRow): AuthUserRecord {
     avatarUrl: row.avatarUrl,
     status: row.status,
     authVersion: row.authVersion,
+    emailVerifiedAt: row.emailVerifiedAt,
     role: row.role.code,
   };
 }

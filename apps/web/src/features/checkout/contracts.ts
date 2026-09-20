@@ -63,7 +63,26 @@ export type CheckoutOrderResponse = {
 
 export type CreateCheckoutOrderInput = {
   addressId: string;
-  paymentMethod: "COD";
+  paymentMethod: "COD" | "ONLINE";
   quoteFingerprint: string;
   customerNote?: string | null;
+  couponCode?: string | null;
+};
+
+export type CouponType = "FIXED_AMOUNT" | "PERCENTAGE";
+
+export type CouponValidationResponse = {
+  code: string;
+  type: CouponType | null;
+  discountAmount: string;
+  itemsSubtotal: string;
+  eligible: boolean;
+  reasonCode: string | null;
+  expiresAt: string | null;
+};
+
+export type AppliedCoupon = {
+  code: string;
+  type: CouponType | null;
+  discountAmount: string;
 };

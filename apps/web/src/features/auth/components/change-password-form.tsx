@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/shared/password-input";
 import { ApiClientError } from "@/lib/api/api-client";
 import { apiErrorMessage } from "@/lib/api/error-ux";
 import { changePasswordSchema, type ChangePasswordFormValues } from "../forms";
@@ -42,10 +42,9 @@ export function ChangePasswordForm() {
     <form className="max-w-lg space-y-5" noValidate onSubmit={form.handleSubmit(submit)}>
       <label className="block text-sm font-semibold">
         Mật khẩu hiện tại
-        <Input
+        <PasswordInput
           className="mt-2"
           {...form.register("currentPassword")}
-          type="password"
           autoComplete="current-password"
           required
           aria-invalid={errors.currentPassword ? true : undefined}
@@ -53,10 +52,9 @@ export function ChangePasswordForm() {
       </label>
       <label className="block text-sm font-semibold">
         Mật khẩu mới
-        <Input
+        <PasswordInput
           className="mt-2"
           {...form.register("newPassword")}
-          type="password"
           autoComplete="new-password"
           required
           aria-invalid={errors.newPassword ? true : undefined}
@@ -64,10 +62,9 @@ export function ChangePasswordForm() {
       </label>
       <label className="block text-sm font-semibold">
         Xác nhận mật khẩu mới
-        <Input
+        <PasswordInput
           className="mt-2"
           {...form.register("confirmPassword")}
-          type="password"
           autoComplete="new-password"
           required
           aria-invalid={errors.confirmPassword ? true : undefined}

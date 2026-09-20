@@ -1,14 +1,25 @@
 'use client';
 
+import { useState } from 'react';
 import {
   ArrowLeft,
   Calendar,
   CreditCard,
+  ExternalLink,
   FileText,
+  LoaderCircle,
   MapPin,
+  Receipt,
+  RefreshCw,
+  Truck,
 } from 'lucide-react';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/features/auth/session/auth-provider';
+import { createVnpayUrl } from '@/features/payment/api/payment-client';
+import { OrderItemReviewButton } from '@/features/reviews/components/order-item-review-button';
+import { createShipment, syncShipment } from '../api/shipping-client';
 import type { OrderDetail } from '../contracts';
 import { OrderActionButtons } from './order-action-buttons';
 import { OrderStatusBadge } from './order-status-badge';
@@ -54,6 +65,69 @@ export function OrderDetailView({
   backLabel?: string;
   isCustomer?: boolean;
 }) {
+  const { authorizedRequest } = useAuth();
+  const [isCreatingUrl, setIsCreatingUrl] = useState<boolean>(false);
+  const [isCreatingShipment, setIsCreatingShipment] = useState<boolean>(false);
+  const [isSyncingShipment, setIsSyncingShipment] = useState<boolean>(false);
+
+  async function handlePayOnline() {
+    if (!order.payment?.id) return;
+    setIsCreatingUrl(true);
+    try {
+      const res = await createVnpayUrl(authorizedRequest, order.payment.id);
+      if (res.paymentUrl) {
+        window.location.href = res.paymentUrl;
+      }
+    } catch {
+      setIsCreatingUrl(false);
+      alert('Không thể tạo liên kết thanh toán lúc này. Vui lòng thử lại sau.');
+    }
+  }
+
+  async function handleCreateShipment() {
+    setIsCreatingShipment(true);
+    try {
+      const res = await createShipment(authorizedRequest, order.id);
+      onOrderUpdate({
+        ...order,
+        shipping: {
+          ...order.shipping,
+          shippingTrackingCode: res.shippingTrackingCode,
+          shippingProvider: res.shippingProvider,
+          shippingProviderStatus: res.shippingProviderStatus,
+          shippingLastSyncedAt: res.shippingLastSyncedAt,
+        },
+      });
+      alert(`Đã tạo vận đơn GHN thành công: ${res.shippingTrackingCode}`);
+    } catch (err: unknown) {
+      alert((err as Error)?.message || 'Tạo vận đơn GHN thất bại');
+    } finally {
+      setIsCreatingShipment(false);
+    }
+  }
+
+  async function handleSyncShipment() {
+    setIsSyncingShipment(true);
+    try {
+      const res = await syncShipment(authorizedRequest, order.id);
+      onOrderUpdate({
+        ...order,
+        status: res.orderStatus,
+        shipping: {
+          ...order.shipping,
+          shippingTrackingCode: res.shippingTrackingCode,
+          shippingProvider: res.shippingProvider,
+          shippingProviderStatus: res.shippingProviderStatus,
+          shippingLastSyncedAt: res.shippingLastSyncedAt,
+        },
+      });
+    } catch (err: unknown) {
+      alert((err as Error)?.message || 'Đồng bộ vận đơn thất bại');
+    } finally {
+      setIsSyncingShipment(false);
+    }
+  }
+
   return (
     <div className="space-y-6">
       {/* Top navigation & header */}
@@ -78,7 +152,14 @@ export function OrderDetailView({
         </div>
 
         {/* Dynamic Action Buttons */}
-        <div className="shrink-0">
+        <div className="shrink-0 flex flex-wrap items-center gap-2">
+          <Link
+            href={`/account/orders/${order.id}/invoice`}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface-soft shadow-sm transition-colors"
+          >
+            <Receipt className="h-3.5 w-3.5 text-muted" />
+            Biên nhận bán hàng
+          </Link>
           <OrderActionButtons
             order={order}
             onSuccess={onOrderUpdate}
@@ -117,6 +198,14 @@ export function OrderDetailView({
                           SKU: {item.sku} · Màu: {item.colorName} · Size:{' '}
                           {item.sizeName}
                         </div>
+                        {isCustomer && order.status === 'COMPLETED' ? (
+                          <div className="mt-2">
+                            <OrderItemReviewButton
+                              orderItemId={item.id}
+                              productName={item.productName}
+                            />
+                          </div>
+                        ) : null}
                       </td>
                       <td className="px-5 py-3.5 text-center text-xs text-muted">
                         {formatVnd(item.unitPrice)}
@@ -162,6 +251,14 @@ export function OrderDetailView({
                     {formatVnd(order.totalAmount)}
                   </span>
                 </div>
+                {order.taxAmount && order.taxAmount !== '0' && (
+                  <div className="flex justify-between text-xs text-muted pt-1">
+                    <span>(Đã gồm thuế GTGT {((order.taxRateBps ?? 800) / 100)}%):</span>
+                    <span className="font-medium text-foreground">
+                      {formatVnd(order.taxAmount)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           </Card>
@@ -235,7 +332,9 @@ export function OrderDetailView({
                 <div className="flex justify-between">
                   <span className="text-muted">Hình thức:</span>
                   <span className="font-semibold text-foreground">
-                    {order.payment?.method ?? 'COD'}
+                    {order.payment?.method === 'ONLINE'
+                      ? 'VNPay (Trực tuyến)'
+                      : 'Thanh toán khi nhận hàng (COD)'}
                   </span>
                 </div>
                 <div className="flex justify-between">
@@ -253,7 +352,11 @@ export function OrderDetailView({
                       ? 'Đã thanh toán'
                       : order.payment?.status === 'CANCELLED'
                         ? 'Đã huỷ thanh toán'
-                        : 'Chờ thu tiền (COD)'}
+                        : order.payment?.status === 'FAILED'
+                          ? 'Thanh toán thất bại'
+                          : order.payment?.method === 'ONLINE'
+                            ? 'Chờ thanh toán VNPay'
+                            : 'Chờ thu tiền (COD)'}
                   </span>
                 </div>
                 {order.payment?.paidAt && (
@@ -264,14 +367,123 @@ export function OrderDetailView({
                     </span>
                   </div>
                 )}
+                {isCustomer &&
+                  order.payment?.method === 'ONLINE' &&
+                  (order.payment?.status === 'PENDING' ||
+                    order.payment?.status === 'FAILED') &&
+                  order.status === 'PENDING' && (
+                    <div className="pt-2">
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={handlePayOnline}
+                        disabled={isCreatingUrl}
+                        className="w-full font-bold text-xs"
+                      >
+                        {isCreatingUrl ? (
+                          <>
+                            <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                            Đang tạo liên kết VNPay...
+                          </>
+                        ) : (
+                          <>
+                            <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+                            Thanh toán ngay qua VNPay
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
                 <div className="border-t border-border pt-2 flex justify-between">
                   <span className="text-muted">Đơn vị VC:</span>
                   <span className="font-medium text-foreground">
                     {order.shipping.shippingServiceName ??
                       order.shipping.shippingProvider ??
-                      'Tiêu chuẩn'}
+                      'Giao Hàng Nhanh'}
                   </span>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dedicated Shipping & Fulfillment Card */}
+          <Card>
+            <CardContent className="space-y-3 p-5 text-xs">
+              <div className="flex items-center justify-between font-bold text-muted uppercase tracking-wide">
+                <div className="flex items-center gap-2">
+                  <Truck className="h-4 w-4 text-brand" />
+                  Vận đơn ({order.shipping.shippingProvider ?? 'GHN'})
+                </div>
+                {order.shipping.shippingTrackingCode && !isCustomer && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSyncShipment}
+                    disabled={isSyncingShipment}
+                    className="h-6 px-2 text-[11px]"
+                  >
+                    <RefreshCw
+                      className={`h-3 w-3 mr-1 ${
+                        isSyncingShipment ? 'animate-spin' : ''
+                      }`}
+                    />
+                    Đồng bộ
+                  </Button>
+                )}
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-muted">Mã vận đơn:</span>
+                  {order.shipping.shippingTrackingCode ? (
+                    <span className="font-mono font-bold text-brand bg-brand/10 px-2 py-0.5 rounded text-xs">
+                      {order.shipping.shippingTrackingCode}
+                    </span>
+                  ) : (
+                    <span className="text-muted italic">Chưa tạo vận đơn</span>
+                  )}
+                </div>
+                {order.shipping.shippingProviderStatus && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-muted">Trạng thái giao vận:</span>
+                    <span className="font-semibold text-foreground bg-surface-soft px-2 py-0.5 rounded border border-border">
+                      {order.shipping.shippingProviderStatus}
+                    </span>
+                  </div>
+                )}
+                {order.shipping.shippingLastSyncedAt && (
+                  <div className="flex justify-between">
+                    <span className="text-muted">Đồng bộ gần nhất:</span>
+                    <span className="text-muted">
+                      {formatDate(order.shipping.shippingLastSyncedAt)}
+                    </span>
+                  </div>
+                )}
+                {!isCustomer &&
+                  !order.shipping.shippingTrackingCode &&
+                  (order.status === 'CONFIRMED' ||
+                    order.status === 'PACKING') && (
+                    <div className="pt-2">
+                      <Button
+                        size="sm"
+                        variant="primary"
+                        onClick={handleCreateShipment}
+                        disabled={isCreatingShipment}
+                        className="w-full font-bold text-xs"
+                      >
+                        {isCreatingShipment ? (
+                          <>
+                            <LoaderCircle className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                            Đang tạo vận đơn GHN...
+                          </>
+                        ) : (
+                          <>
+                            <Truck className="mr-1.5 h-3.5 w-3.5" />
+                            Tạo vận đơn GHN
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  )}
               </div>
             </CardContent>
           </Card>

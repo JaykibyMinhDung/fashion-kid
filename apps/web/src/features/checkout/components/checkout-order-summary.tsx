@@ -1,24 +1,39 @@
 "use client";
 
 import { LoaderCircle } from "lucide-react";
-import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
+import { SafeImage } from "@/components/shared/safe-image";
 import type { CartItem } from "@/features/cart/api/cart-client";
 import { formatCurrency } from "@/lib/utils";
+
+function isPositiveAmount(value: string | null | undefined): boolean {
+  if (!value) return false;
+  try {
+    return BigInt(value) > BigInt(0);
+  } catch {
+    return false;
+  }
+}
 
 export function CheckoutOrderSummary({
   items,
   subtotal,
   shippingFee,
   total,
+  discountAmount,
+  couponCode,
   isLoadingQuote,
 }: {
   items: CartItem[];
   subtotal: string;
   shippingFee: string | null;
   total: string | null;
+  discountAmount?: string | null;
+  couponCode?: string | null;
   isLoadingQuote?: boolean;
 }) {
+  const hasDiscount = isPositiveAmount(discountAmount);
+
   return (
     <Card className="rounded-3xl border-border bg-surface p-6 shadow-sm">
       <CardContent className="space-y-4 p-0">
@@ -33,7 +48,7 @@ export function CheckoutOrderSummary({
               <div key={item.cartItemId} className="flex gap-3 py-3 text-sm">
                 <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-xl border border-border bg-surface-soft">
                   {primaryImage ? (
-                    <Image
+                    <SafeImage
                       src={primaryImage}
                       alt={item.product.name}
                       fill
@@ -95,8 +110,23 @@ export function CheckoutOrderSummary({
           </div>
 
           <div className="flex justify-between text-muted">
-            <span>Giảm giá</span>
-            <span className="font-medium text-foreground">0 ₫</span>
+            <span>
+              Giảm giá
+              {hasDiscount && couponCode ? (
+                <span className="ml-1 font-semibold text-emerald-600">
+                  ({couponCode})
+                </span>
+              ) : null}
+            </span>
+            {hasDiscount ? (
+              <span className="font-semibold text-emerald-600">
+                -{formatCurrency(discountAmount as string)}
+              </span>
+            ) : (
+              <span className="font-medium text-foreground">
+                {formatCurrency("0")}
+              </span>
+            )}
           </div>
 
           <div className="border-t border-border pt-3 flex justify-between items-baseline">

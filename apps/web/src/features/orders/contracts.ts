@@ -64,7 +64,29 @@ export type OrderShipping = {
   shippingServiceCode?: string | null;
   shippingServiceName?: string | null;
   shippingTrackingCode?: string | null;
+  shippingProviderStatus?: string | null;
+  shippingLastSyncedAt?: string | null;
   shippingFee: string;
+};
+
+export type ShippingBlock = {
+  orderId: string;
+  orderNumber: string;
+  orderStatus: OrderStatus;
+  shippingProvider: string | null;
+  shippingServiceCode: string | null;
+  shippingServiceName: string | null;
+  shippingTrackingCode: string | null;
+  shippingProviderStatus: string | null;
+  simplifiedStatus: string;
+  shippingLastSyncedAt: string | null;
+  receiverName: string;
+  receiverPhone: string;
+  shippingAddressLine: string;
+  shippingWardName: string;
+  shippingProvinceName: string;
+  isCreated: boolean;
+  canCreate: boolean;
 };
 
 export type OrderStatusHistory = {
@@ -112,6 +134,9 @@ export type OrderDetail = {
   discountAmount: string;
   shippingFee: string;
   totalAmount: string;
+  taxRateBps?: number | null;
+  taxAmount?: string | null;
+  netAmount?: string | null;
   customerNote?: string | null;
   cancelReason?: string | null;
   confirmedAt?: string | null;

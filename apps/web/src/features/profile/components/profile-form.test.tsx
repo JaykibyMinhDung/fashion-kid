@@ -100,9 +100,6 @@ describe("ProfileForm", () => {
     fireEvent.change(screen.getByLabelText("Số điện thoại"), {
       target: { value: "00 84 987-654-321" },
     });
-    fireEvent.change(screen.getByLabelText("Ảnh đại diện (URL)"), {
-      target: { value: " https://cdn.example.com/avatar.png " },
-    });
     fireEvent.click(screen.getByRole("button", { name: "Lưu thay đổi" }));
 
     expect(await screen.findByText("Đã cập nhật hồ sơ.")).toHaveTextContent(
@@ -112,7 +109,6 @@ describe("ProfileForm", () => {
       {
         fullName: "Updated Customer",
         phone: "+84987654321",
-        avatarUrl: "https://cdn.example.com/avatar.png",
       },
     ]);
     expect(synchronizeCurrentUser).toHaveBeenCalledWith(updated);

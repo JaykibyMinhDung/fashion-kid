@@ -28,6 +28,8 @@ export const PERMISSIONS = [
   'REVIEW_MODERATE',
   'AUDIT_READ',
   'REPORT_READ',
+  'WISHLIST_READ_OWN',
+  'WISHLIST_WRITE_OWN',
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

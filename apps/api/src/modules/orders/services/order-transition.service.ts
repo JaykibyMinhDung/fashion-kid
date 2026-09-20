@@ -1,6 +1,5 @@
 import {
   BadRequestException,
-  ConflictException,
   HttpStatus,
   Injectable,
   Logger,
@@ -28,6 +27,17 @@ import {
   OrderRepository,
   type OrderWithRelations,
 } from '../repositories/order.repository';
+import { InvoiceService } from '../../billing/services/invoice.service';
+import { OutboxService } from '../../notification/services/outbox.service';
+import { ConfigService } from '@nestjs/config';
+import { Optional } from '@nestjs/common';
+
+const UUID_REGEX =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function toNullableUuid(id?: string | null): string | null {
+  return id && UUID_REGEX.test(id) ? id : null;
+}
 
 export function mapOrderToDetailDto(
   order: OrderWithRelations,
@@ -50,6 +60,9 @@ export function mapOrderToDetailDto(
     discountAmount: order.discountAmount.toString(),
     shippingFee: order.shippingFee.toString(),
     totalAmount: order.totalAmount.toString(),
+    taxRateBps: order.taxRateBps ?? null,
+    taxAmount: order.taxAmount ? order.taxAmount.toString() : null,
+    netAmount: order.netAmount ? order.netAmount.toString() : null,
     customerNote: order.customerNote,
     cancelReason: order.cancelReason,
     confirmedAt: order.confirmedAt ? order.confirmedAt.toISOString() : null,
@@ -96,6 +109,10 @@ export function mapOrderToDetailDto(
       shippingServiceCode: order.shippingServiceCode,
       shippingServiceName: order.shippingServiceName,
       shippingTrackingCode: order.shippingTrackingCode,
+      shippingProviderStatus: order.shippingProviderStatus ?? null,
+      shippingLastSyncedAt: order.shippingLastSyncedAt
+        ? order.shippingLastSyncedAt.toISOString()
+        : null,
       shippingFee: order.shippingFee.toString(),
     },
     statusHistories: order.statusHistories.map((history) => ({
@@ -125,7 +142,69 @@ export class OrderTransitionService {
     private readonly prisma: PrismaService,
     private readonly orderRepository: OrderRepository,
     private readonly inventoryRepository: InventoryRepository,
+    private readonly invoiceService: InvoiceService,
+    @Optional() private readonly outboxService?: OutboxService,
+    @Optional() private readonly configService?: ConfigService,
   ) {}
+
+  private async enqueueOrderNotification(
+    tx: PrismaTransactionClient,
+    order: Pick<
+      OrderWithRelations,
+      | 'id'
+      | 'orderNumber'
+      | 'receiverName'
+      | 'userId'
+      | 'shippingServiceName'
+      | 'shippingProvider'
+      | 'shippingTrackingCode'
+    >,
+    template:
+      | 'order-confirmed'
+      | 'order-packing'
+      | 'order-shipping'
+      | 'order-delivered'
+      | 'order-cancelled',
+    extraPayload: Record<string, unknown> = {},
+  ): Promise<void> {
+    if (!this.outboxService) return;
+
+    try {
+      const user = await tx.user.findUnique({
+        where: { id: order.userId },
+        select: { email: true, fullName: true },
+      });
+      if (!user?.email) return;
+
+      const appPublicUrl =
+        this.configService?.get<string>('APP_PUBLIC_URL') ||
+        'http://localhost:3000';
+
+      const dedupeKey = `ORDER_${template.toUpperCase().replace('-', '_')}:${order.id}`;
+
+      await this.outboxService.enqueue(tx, {
+        dedupeKey,
+        toEmail: user.email,
+        template,
+        payload: {
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.receiverName || user.fullName || 'Quý khách',
+          orderUrl: `${appPublicUrl}/account/orders/${order.id}`,
+          shippingProvider:
+            order.shippingServiceName ||
+            order.shippingProvider ||
+            'Đơn vị vận chuyển',
+          trackingCode: order.shippingTrackingCode || '',
+          ...extraPayload,
+        },
+      });
+    } catch (err) {
+      this.logger.warn(
+        `Failed to enqueue order notification ${template} for ${order.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+  }
 
   getAllowedActions(
     order: Pick<OrderWithRelations, 'status' | 'userId'>,
@@ -219,6 +298,8 @@ export class OrderTransitionService {
         },
       });
 
+      await this.enqueueOrderNotification(tx, order, 'order-confirmed');
+
       const updated = await this.orderRepository.findById(order.id, tx);
       const allowedActions = this.getAllowedActions(
         updated!,
@@ -264,6 +345,8 @@ export class OrderTransitionService {
       await this.executePaymentCancellation(tx, order, trimmedReason);
 
       const now = new Date();
+      await this.invoiceService.voidForOrder(tx, order.id, now);
+
       await tx.order.update({
         where: { id: order.id },
         data: {
@@ -282,6 +365,10 @@ export class OrderTransitionService {
           changedBy: userId,
           note: trimmedReason,
         },
+      });
+
+      await this.enqueueOrderNotification(tx, order, 'order-cancelled', {
+        reason: trimmedReason,
       });
 
       const updated = await this.orderRepository.findById(order.id, tx);
@@ -330,6 +417,8 @@ export class OrderTransitionService {
       await this.executePaymentCancellation(tx, order, trimmedReason);
 
       const now = new Date();
+      await this.invoiceService.voidForOrder(tx, order.id, now);
+
       await tx.order.update({
         where: { id: order.id },
         data: {
@@ -348,6 +437,10 @@ export class OrderTransitionService {
           changedBy: actorId,
           note: trimmedReason,
         },
+      });
+
+      await this.enqueueOrderNotification(tx, order, 'order-cancelled', {
+        reason: trimmedReason,
       });
 
       const updated = await this.orderRepository.findById(order.id, tx);
@@ -405,6 +498,8 @@ export class OrderTransitionService {
           note: 'Bắt đầu đóng gói đơn hàng',
         },
       });
+
+      await this.enqueueOrderNotification(tx, order, 'order-packing');
 
       const updated = await this.orderRepository.findById(order.id, tx);
       const allowedActions = this.getAllowedActions(
@@ -467,6 +562,8 @@ export class OrderTransitionService {
         },
       });
 
+      await this.enqueueOrderNotification(tx, order, 'order-shipping');
+
       const updated = await this.orderRepository.findById(order.id, tx);
       const allowedActions = this.getAllowedActions(
         updated!,
@@ -513,10 +610,15 @@ export class OrderTransitionService {
           orderId: order.id,
           fromStatus: OrderStatus.SHIPPING,
           toStatus: OrderStatus.DELIVERED,
-          changedBy: actorId,
-          note: 'Giao hàng thành công tới người nhận',
+          changedBy: toNullableUuid(actorId),
+          note:
+            actorId === 'SYSTEM'
+              ? '[GHN Webhook] Giao hàng thành công tới người nhận'
+              : 'Giao hàng thành công tới người nhận',
         },
       });
+
+      await this.enqueueOrderNotification(tx, order, 'order-delivered');
 
       const updated = await this.orderRepository.findById(order.id, tx);
       const allowedActions = this.getAllowedActions(
@@ -746,7 +848,11 @@ export class OrderTransitionService {
       }));
 
     if (!warehouse) {
-      throw new ConflictException('Không tìm thấy kho hàng hợp lệ để hoàn kho');
+      throw new ApiException(
+        HttpStatus.CONFLICT,
+        'STOCK_RESERVATION_INCONSISTENT',
+        'Không tìm thấy kho hàng hợp lệ để hoàn kho',
+      );
     }
 
     return order.items.map((item) => ({

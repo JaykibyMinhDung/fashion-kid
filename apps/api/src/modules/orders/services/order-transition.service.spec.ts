@@ -13,6 +13,7 @@ import {
   type OrderWithRelations,
 } from '../repositories/order.repository';
 import { OrderTransitionService } from './order-transition.service';
+import { InvoiceService } from '../../billing/services/invoice.service';
 
 describe('OrderTransitionService', () => {
   let service: OrderTransitionService;
@@ -164,12 +165,18 @@ describe('OrderTransitionService', () => {
         ),
     };
 
+    const mockInvoiceService = {
+      voidForOrder: jest.fn().mockResolvedValue(null),
+      issueForOrder: jest.fn().mockResolvedValue(null),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         OrderTransitionService,
         { provide: OrderRepository, useValue: mockOrderRepo },
         { provide: InventoryRepository, useValue: mockInventoryRepo },
         { provide: PrismaService, useValue: mockPrisma },
+        { provide: InvoiceService, useValue: mockInvoiceService },
       ],
     }).compile();
 

@@ -4,12 +4,12 @@ import {
   AlertCircle,
   Banknote,
   CheckCircle2,
+  CreditCard,
   LoaderCircle,
   ShieldCheck,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import type { Address } from "@/features/addresses/contracts";
 import { ApiClientError } from "@/lib/api/api-client";
 import { useAuth } from "@/features/auth/session/auth-provider";
@@ -18,9 +18,20 @@ import {
   calculateShippingQuote,
   createCheckoutOrder,
 } from "../api/checkout-client";
-import type { ShippingQuote } from "../contracts";
+import { createVnpayUrl } from "@/features/payment/api/payment-client";
+import type { AppliedCoupon, ShippingQuote } from "../contracts";
 import { CheckoutAddressSelector } from "./checkout-address-selector";
+import { CheckoutCouponField } from "./checkout-coupon-field";
 import { CheckoutOrderSummary } from "./checkout-order-summary";
+
+function safeBigInt(value: string | null | undefined): bigint {
+  if (!value) return BigInt(0);
+  try {
+    return BigInt(value);
+  } catch {
+    return BigInt(0);
+  }
+}
 
 export function CheckoutForm({
   cart,
@@ -29,7 +40,7 @@ export function CheckoutForm({
 }: {
   cart: CartResponse;
   addresses: Address[];
-  onSuccess(orderNumber: string): void;
+  onSuccess(orderNumber: string, paymentMethod: "COD" | "ONLINE"): void;
 }) {
   const { authorizedRequest } = useAuth();
 
@@ -46,6 +57,10 @@ export function CheckoutForm({
   const [isLoadingQuote, setIsLoadingQuote] = useState<boolean>(
     Boolean(initialAddressId),
   );
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCoupon | null>(
+    null,
+  );
+  const [paymentMethod, setPaymentMethod] = useState<"COD" | "ONLINE">("COD");
   const [customerNote, setCustomerNote] = useState<string>("");
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -84,12 +99,17 @@ export function CheckoutForm({
     };
   }, [authorizedRequest, selectedAddressId]);
 
-  // Calculate total amount in string
+  // Calculate total amount in string: subtotal + shipping - discount (never below 0)
+  const discountAmount = appliedCoupon?.discountAmount ?? "0";
   let calculatedTotal: string | null = null;
   try {
-    const subtotalBig = BigInt(cart.subtotal);
-    const shippingBig = BigInt(shippingQuote?.fee ?? "0");
-    calculatedTotal = (subtotalBig + shippingBig).toString();
+    const subtotalBig = safeBigInt(cart.subtotal);
+    const shippingBig = safeBigInt(shippingQuote?.fee ?? "0");
+    const discountBig = safeBigInt(discountAmount);
+    const totalBig = subtotalBig + shippingBig - discountBig;
+    calculatedTotal = (
+      totalBig > BigInt(0) ? totalBig : BigInt(0)
+    ).toString();
   } catch {
     calculatedTotal = cart.subtotal;
   }
@@ -111,15 +131,44 @@ export function CheckoutForm({
     try {
       const response = await createCheckoutOrder(authorizedRequest, {
         addressId: selectedAddressId,
-        paymentMethod: "COD",
+        paymentMethod,
         quoteFingerprint: shippingQuote.quoteFingerprint,
         customerNote: customerNote.trim() || null,
+        couponCode: appliedCoupon?.code ?? null,
       });
 
-      onSuccess(response.orderNumber);
+      if (paymentMethod === "ONLINE") {
+        try {
+          const vnpayRes = await createVnpayUrl(
+            authorizedRequest,
+            response.payment.id,
+          );
+          if (vnpayRes.paymentUrl) {
+            window.location.href = vnpayRes.paymentUrl;
+            return;
+          }
+        } catch (vnpayErr) {
+          // VNPay URL creation failed — show error, don't silently fall back to COD page
+          const msg =
+            vnpayErr instanceof ApiClientError
+              ? vnpayErr.message
+              : "Không thể khởi tạo thanh toán VNPay. Đơn hàng đã được tạo, bạn có thể thanh toán lại từ trang chi tiết đơn hàng.";
+          setErrorMessage(msg);
+          // Still navigate to success page with correct payment method
+          onSuccess(response.orderNumber, "ONLINE");
+          return;
+        }
+      }
+
+      onSuccess(response.orderNumber, paymentMethod);
     } catch (err) {
       if (err instanceof ApiClientError) {
         setErrorMessage(err.message);
+        // A coupon that turned invalid between preview and checkout (e.g. usage
+        // limit hit concurrently) must be dropped so the customer can retry.
+        if (err.code.startsWith("COUPON_")) {
+          setAppliedCoupon(null);
+        }
         if (err.code === "SHIPPING_QUOTE_STALE" && selectedAddressId) {
           setShippingQuote(null);
           setIsLoadingQuote(true);
@@ -146,7 +195,7 @@ export function CheckoutForm({
   return (
     <form onSubmit={handleSubmit}>
       <div className="grid gap-8 lg:grid-cols-12">
-        {/* Left Column: Address, Payment, Note */}
+        {/* Left Column: Address, Payment, Coupon, Note */}
         <div className="space-y-6 lg:col-span-7">
           {errorMessage && (
             <div className="flex items-start gap-2.5 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
@@ -174,28 +223,108 @@ export function CheckoutForm({
             <h3 className="text-sm font-bold text-foreground">
               Phương thức thanh toán
             </h3>
-            <Card className="rounded-2xl border-brand bg-brand/5 p-4 ring-2 ring-brand/20">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand/10 text-brand">
-                    <Banknote className="h-5 w-5" />
+            <div className="grid gap-3">
+              {/* COD Option */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setPaymentMethod("COD")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setPaymentMethod("COD");
+                  }
+                }}
+                className={`cursor-pointer rounded-2xl border p-4 transition ${
+                  paymentMethod === "COD"
+                    ? "border-brand bg-brand/5 ring-2 ring-brand/20"
+                    : "border-border bg-surface hover:border-border-strong"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                        paymentMethod === "COD"
+                          ? "bg-brand/10 text-brand"
+                          : "bg-surface-soft text-muted"
+                      }`}
+                    >
+                      <Banknote className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-bold text-foreground">
+                        Thanh toán khi nhận hàng (COD)
+                      </h4>
+                      <p className="text-xs text-muted mt-0.5">
+                        Thanh toán bằng tiền mặt cho nhân viên giao hàng khi nhận
+                        hàng
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <h4 className="text-sm font-bold text-foreground">
-                      Thanh toán khi nhận hàng (COD)
-                    </h4>
-                    <p className="text-xs text-muted mt-0.5">
-                      Thanh toán bằng tiền mặt cho nhân viên giao hàng khi nhận
-                      hàng
-                    </p>
-                  </div>
+                  {paymentMethod === "COD" && (
+                    <CheckCircle2 className="h-5 w-5 text-brand shrink-0" />
+                  )}
                 </div>
-                <CheckCircle2 className="h-5 w-5 text-brand shrink-0" />
               </div>
-            </Card>
+
+              {/* VNPay Option */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setPaymentMethod("ONLINE")}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    setPaymentMethod("ONLINE");
+                  }
+                }}
+                className={`cursor-pointer rounded-2xl border p-4 transition ${
+                  paymentMethod === "ONLINE"
+                    ? "border-brand bg-brand/5 ring-2 ring-brand/20"
+                    : "border-border bg-surface hover:border-border-strong"
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div
+                      className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                        paymentMethod === "ONLINE"
+                          ? "bg-brand/10 text-brand"
+                          : "bg-surface-soft text-muted"
+                      }`}
+                    >
+                      <CreditCard className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h4 className="text-sm font-bold text-foreground">
+                          Thanh toán trực tuyến (VNPay Sandbox)
+                        </h4>
+                        <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700">
+                          VNPay
+                        </span>
+                      </div>
+                      <p className="text-xs text-muted mt-0.5">
+                        Thẻ ATM nội địa, Visa, MasterCard, JCB hoặc quét mã QR Pay
+                      </p>
+                    </div>
+                  </div>
+                  {paymentMethod === "ONLINE" && (
+                    <CheckCircle2 className="h-5 w-5 text-brand shrink-0" />
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* 3. Customer Note */}
+          {/* 3. Coupon */}
+          <CheckoutCouponField
+            appliedCoupon={appliedCoupon}
+            onApply={setAppliedCoupon}
+            onRemove={() => setAppliedCoupon(null)}
+            disabled={isSubmitting}
+          />
+
+          {/* 4. Customer Note */}
           <div className="space-y-2">
             <div className="flex justify-between items-baseline">
               <label
@@ -236,6 +365,8 @@ export function CheckoutForm({
             subtotal={cart.subtotal}
             shippingFee={shippingQuote?.fee ?? null}
             total={calculatedTotal}
+            discountAmount={discountAmount}
+            couponCode={appliedCoupon?.code ?? null}
             isLoadingQuote={isLoadingQuote}
           />
 
@@ -257,6 +388,8 @@ export function CheckoutForm({
                 <LoaderCircle className="h-5 w-5 animate-spin" />
                 Đang xử lý đơn hàng...
               </span>
+            ) : paymentMethod === "ONLINE" ? (
+              "Thanh toán qua VNPay"
             ) : (
               "Xác nhận đặt hàng COD"
             )}

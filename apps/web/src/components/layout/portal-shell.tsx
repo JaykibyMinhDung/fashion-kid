@@ -1,11 +1,15 @@
 import {
   Boxes,
+  Heart,
   KeyRound,
   LayoutDashboard,
   Layers3,
   MapPin,
   Package,
   ReceiptText,
+  ScrollText,
+  Star,
+  Ticket,
   UserRound,
   UsersRound,
   Warehouse,
@@ -31,6 +35,10 @@ const iconMap = {
   key: KeyRound,
   map: MapPin,
   receipt: ReceiptText,
+  ticket: Ticket,
+  star: Star,
+  scroll: ScrollText,
+  heart: Heart,
 };
 
 const portalConfig: Record<
@@ -111,9 +119,9 @@ export function PortalShell({
         </nav>
 
         <div className="absolute inset-x-4 bottom-5 hidden rounded-2xl bg-surface-soft p-4 lg:block">
-          <p className="text-xs font-bold text-foreground">Phạm vi tài liệu</p>
+          <p className="text-xs font-bold text-foreground">Mầm Nhỏ Store</p>
           <p className="mt-1 text-xs leading-5 text-muted">
-            Day 1–6 · UI foundation
+            Thời trang trẻ em chất lượng cao
           </p>
           <LogoutButton className="mt-4 text-xs" />
         </div>
