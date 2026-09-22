@@ -52,6 +52,8 @@ const ERROR_CODE_UX_MESSAGES: Partial<Record<ClientErrorCode, string>> = {
   REVIEW_ALREADY_EXISTS: "Bạn đã đánh giá sản phẩm này rồi.",
 
   // --- Payment ---
+  PAYMENT_INVALID_STATE:
+    "Trạng thái thanh toán không hợp lệ cho thao tác này. Dữ liệu sẽ được làm mới.",
   PAYMENT_EXPIRED: "Phiên thanh toán đã hết hạn. Vui lòng thử lại.",
   VNPAY_PAYMENT_ALREADY_COMPLETED: "Giao dịch thanh toán đã được xử lý.",
 

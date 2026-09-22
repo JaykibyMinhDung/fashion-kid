@@ -12,7 +12,12 @@ import {
   Legend,
   Filler,
 } from "chart.js";
-import type { ChartOptions, TooltipItem } from "chart.js";
+import type {
+  ChartData,
+  ChartOptions,
+  ScriptableContext,
+  TooltipItem,
+} from "chart.js";
 import { Line } from "react-chartjs-2";
 import { Card, CardContent } from "@/components/ui/card";
 import type { RevenueSeriesResponse } from "../contracts";
@@ -118,7 +123,7 @@ export function RevenueChart({
 
   const revenueValues = data.series.map((p) => Number(p.grossRevenue));
 
-  const chartData = {
+  const chartData: ChartData<"line"> = {
     labels,
     datasets: [
       {
@@ -132,7 +137,7 @@ export function RevenueChart({
         pointRadius: 3,
         pointHoverRadius: 6,
         fill: true,
-        backgroundColor: (context: { chart: Chart<"line"> }) => {
+        backgroundColor: (context: ScriptableContext<"line">) => {
           const { chart } = context;
           const { ctx, chartArea } = chart;
           if (!chartArea) return "rgba(16, 185, 129, 0.1)";

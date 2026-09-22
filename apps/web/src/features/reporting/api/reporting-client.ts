@@ -100,7 +100,7 @@ export async function exportConsolidatedWorkbook(
   query: { from: string; to: string; granularity?: string },
 ): Promise<string> {
   const qs = queryString(query as Record<string, string>);
-  const blob = await request(`/api/v1/admin/reports/export/consolidated${qs}` as `/${string}`);
+  const { blob } = await request(`/api/v1/admin/reports/export/consolidated${qs}` as `/${string}`);
   const filename = `bao-cao-tong-hop_${query.from}_${query.to}.xlsx`;
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");

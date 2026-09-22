@@ -10,6 +10,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { ValidationError } from 'class-validator';
 import cookieParserPackage from 'cookie-parser';
 import type { RequestHandler } from 'express';
+import { json, urlencoded } from 'express';
 import { ApiException, type ApiErrorDetail } from '../common/errors/api-error';
 import { ApiExceptionFilter } from '../common/errors/api-exception.filter';
 import { requestIdMiddleware } from '../common/http/request-id';
@@ -73,6 +74,10 @@ export function configureApplication(app: INestApplication): void {
   app.use(requestIdMiddleware);
   app.use(securityHeaders(isProduction));
   app.use(createCookieParser());
+  // SEC-WEB-07 (Day 21): giới hạn kích thước body tường minh (chống oversized-body/DoS).
+  const bodyLimit = '256kb';
+  app.use(json({ limit: bodyLimit }));
+  app.use(urlencoded({ extended: true, limit: bodyLimit }));
   const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
       callback(null, !origin || origin === webOrigin);

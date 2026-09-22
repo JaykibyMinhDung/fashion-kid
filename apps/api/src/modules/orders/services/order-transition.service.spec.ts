@@ -304,7 +304,7 @@ describe('OrderTransitionService', () => {
       );
     });
 
-    it('throws INVALID_ORDER_TRANSITION if order is not PENDING', async () => {
+    it('throws ORDER_TRANSITION_CONFLICT if order already advanced past PENDING', async () => {
       orderRepository.findByIdForUpdate.mockResolvedValue({
         ...mockOrder,
         status: OrderStatus.CONFIRMED,
@@ -313,7 +313,7 @@ describe('OrderTransitionService', () => {
       await expect(
         service.confirm('order-1', 'sales-1', 'SALES_STAFF'),
       ).rejects.toMatchObject({
-        code: 'INVALID_ORDER_TRANSITION',
+        code: 'ORDER_TRANSITION_CONFLICT',
       } satisfies Partial<ApiException>);
     });
 
@@ -371,7 +371,7 @@ describe('OrderTransitionService', () => {
       expect(result.status).toBe(OrderStatus.CANCELLED);
     });
 
-    it('throws INVALID_ORDER_TRANSITION if order has reached PACKING', async () => {
+    it('throws ORDER_TRANSITION_CONFLICT if order has reached PACKING', async () => {
       orderRepository.findByIdForUpdate.mockResolvedValue({
         ...mockOrder,
         status: OrderStatus.PACKING,
@@ -380,7 +380,7 @@ describe('OrderTransitionService', () => {
       await expect(
         service.cancelByCustomer('order-1', 'user-1', 'Huỷ đơn'),
       ).rejects.toMatchObject({
-        code: 'INVALID_ORDER_TRANSITION',
+        code: 'ORDER_TRANSITION_CONFLICT',
       } satisfies Partial<ApiException>);
     });
 
@@ -560,9 +560,51 @@ describe('OrderTransitionService', () => {
       await expect(
         service.complete('order-1', 'admin-1', 'ADMIN'),
       ).rejects.toMatchObject({
-        code: 'INVALID_ORDER_TRANSITION',
+        code: 'PAYMENT_INVALID_STATE',
       } satisfies Partial<ApiException>);
       expect(orderRepository.findById).not.toHaveBeenCalled();
     });
   });
+
+  describe('Day 19 T2 — phân loại conflict vs invalid', () => {
+    it('confirm trên đơn đã CANCELLED => ORDER_TRANSITION_CONFLICT', async () => {
+      orderRepository.findByIdForUpdate.mockResolvedValue({
+        ...mockOrder,
+        status: OrderStatus.CANCELLED,
+      });
+
+      await expect(
+        service.confirm('order-1', 'sales-1', 'SALES_STAFF'),
+      ).rejects.toMatchObject({
+        code: 'ORDER_TRANSITION_CONFLICT',
+      } satisfies Partial<ApiException>);
+    });
+
+    it('ship trên đơn đã SHIPPING (đã vượt bước) => ORDER_TRANSITION_CONFLICT', async () => {
+      orderRepository.findByIdForUpdate.mockResolvedValue({
+        ...mockOrder,
+        status: OrderStatus.SHIPPING,
+      });
+
+      await expect(
+        service.ship('order-1', 'wh-1', 'WAREHOUSE_STAFF'),
+      ).rejects.toMatchObject({
+        code: 'ORDER_TRANSITION_CONFLICT',
+      } satisfies Partial<ApiException>);
+    });
+
+    it('deliver trên đơn còn CONFIRMED (nhảy bước) => INVALID_ORDER_TRANSITION', async () => {
+      orderRepository.findByIdForUpdate.mockResolvedValue({
+        ...mockOrder,
+        status: OrderStatus.CONFIRMED,
+      });
+
+      await expect(
+        service.deliver('order-1', 'admin-1', 'ADMIN'),
+      ).rejects.toMatchObject({
+        code: 'INVALID_ORDER_TRANSITION',
+      } satisfies Partial<ApiException>);
+    });
+  });
+
 });

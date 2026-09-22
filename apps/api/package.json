@@ -33,6 +33,7 @@
     "db:migrate:deploy": "prisma migrate deploy",
     "db:migrate:reset": "prisma migrate reset",
     "db:seed": "prisma db seed",
+    "db:seed:perf": "pnpm exec tsx prisma/seed-perf.ts",
     "db:studio": "prisma studio"
   },
   "dependencies": {

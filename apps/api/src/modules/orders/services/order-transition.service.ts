@@ -134,6 +134,37 @@ export function mapOrderToDetailDto(
   };
 }
 
+const ORDER_STATUS_RANK: Record<OrderStatus, number> = {
+  [OrderStatus.PENDING]: 0,
+  [OrderStatus.CONFIRMED]: 1,
+  [OrderStatus.PACKING]: 2,
+  [OrderStatus.SHIPPING]: 3,
+  [OrderStatus.DELIVERED]: 4,
+  [OrderStatus.COMPLETED]: 5,
+  [OrderStatus.CANCELLED]: -1,
+};
+
+/**
+ * Phân loại lỗi transition đơn hàng (Day 19 T2).
+ * - Đã CANCELLED, hoặc trạng thái hiện tại đã vượt qua điểm hợp lệ của thao tác
+ *   => ORDER_TRANSITION_CONFLICT (actor khác đã đẩy trạng thái; UI cũ =>
+ *   FE refetch + dựng lại allowedActions, có thể thử lại nếu còn hợp lệ).
+ * - Trạng thái còn sớm hơn điểm hợp lệ (nhảy bước) => INVALID_ORDER_TRANSITION
+ *   (thao tác sai luật state machine; FE ẩn nút, không retry).
+ * Cả hai đều trả HTTP 409.
+ */
+function classifyOrderTransitionError(
+  current: OrderStatus,
+  highestValidFrom: OrderStatus,
+): 'ORDER_TRANSITION_CONFLICT' | 'INVALID_ORDER_TRANSITION' {
+  if (current === OrderStatus.CANCELLED) {
+    return 'ORDER_TRANSITION_CONFLICT';
+  }
+  return ORDER_STATUS_RANK[current] > ORDER_STATUS_RANK[highestValidFrom]
+    ? 'ORDER_TRANSITION_CONFLICT'
+    : 'INVALID_ORDER_TRANSITION';
+}
+
 @Injectable()
 export class OrderTransitionService {
   private readonly logger = new Logger(OrderTransitionService.name);
@@ -273,7 +304,7 @@ export class OrderTransitionService {
         this.logRejectedTransition('CONFIRM', order, actorId, 'BAD_STATUS');
         throw new ApiException(
           HttpStatus.CONFLICT,
-          'INVALID_ORDER_TRANSITION',
+          classifyOrderTransitionError(order.status, OrderStatus.PENDING),
           `Không thể xác nhận đơn hàng đang ở trạng thái ${order.status}`,
         );
       }
@@ -334,7 +365,7 @@ export class OrderTransitionService {
         this.logRejectedTransition('CANCEL', order, userId, 'BAD_STATUS');
         throw new ApiException(
           HttpStatus.CONFLICT,
-          'INVALID_ORDER_TRANSITION',
+          classifyOrderTransitionError(order.status, OrderStatus.CONFIRMED),
           `Không thể huỷ đơn hàng khi đơn đã ở trạng thái ${order.status}`,
         );
       }
@@ -406,7 +437,7 @@ export class OrderTransitionService {
         this.logRejectedTransition('CANCEL', order, actorId, 'BAD_STATUS');
         throw new ApiException(
           HttpStatus.CONFLICT,
-          'INVALID_ORDER_TRANSITION',
+          classifyOrderTransitionError(order.status, OrderStatus.CONFIRMED),
           `Không thể huỷ đơn hàng khi đơn đã ở trạng thái ${order.status}`,
         );
       }
@@ -474,7 +505,7 @@ export class OrderTransitionService {
         );
         throw new ApiException(
           HttpStatus.CONFLICT,
-          'INVALID_ORDER_TRANSITION',
+          classifyOrderTransitionError(order.status, OrderStatus.CONFIRMED),
           `Chỉ có thể đóng gói đơn hàng đang ở trạng thái CONFIRMED (hiện tại: ${order.status})`,
         );
       }
@@ -527,7 +558,7 @@ export class OrderTransitionService {
         this.logRejectedTransition('SHIP', order, actorId, 'BAD_STATUS');
         throw new ApiException(
           HttpStatus.CONFLICT,
-          'INVALID_ORDER_TRANSITION',
+          classifyOrderTransitionError(order.status, OrderStatus.PACKING),
           `Chỉ có thể xuất kho giao hàng cho đơn ở trạng thái PACKING (hiện tại: ${order.status})`,
         );
       }
@@ -590,7 +621,7 @@ export class OrderTransitionService {
         this.logRejectedTransition('DELIVER', order, actorId, 'BAD_STATUS');
         throw new ApiException(
           HttpStatus.CONFLICT,
-          'INVALID_ORDER_TRANSITION',
+          classifyOrderTransitionError(order.status, OrderStatus.SHIPPING),
           `Chỉ có thể đánh dấu đã giao cho đơn ở trạng thái SHIPPING (hiện tại: ${order.status})`,
         );
       }
@@ -646,7 +677,7 @@ export class OrderTransitionService {
         this.logRejectedTransition('COMPLETE', order, actorId, 'BAD_STATUS');
         throw new ApiException(
           HttpStatus.CONFLICT,
-          'INVALID_ORDER_TRANSITION',
+          classifyOrderTransitionError(order.status, OrderStatus.DELIVERED),
           `Chỉ có thể hoàn tất đơn hàng khi đã DELIVERED (hiện tại: ${order.status})`,
         );
       }
@@ -664,7 +695,7 @@ export class OrderTransitionService {
         );
         throw new ApiException(
           HttpStatus.CONFLICT,
-          'INVALID_ORDER_TRANSITION',
+          'PAYMENT_INVALID_STATE',
           'Không thể hoàn tất đơn hàng khi thanh toán COD không hợp lệ',
         );
       }
