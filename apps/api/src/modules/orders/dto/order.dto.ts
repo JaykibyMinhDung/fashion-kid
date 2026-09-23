@@ -188,6 +188,12 @@ export class OrderShippingResponseDto {
   @ApiPropertyOptional({ nullable: true })
   shippingTrackingCode!: string | null;
 
+  @ApiPropertyOptional({ nullable: true })
+  shippingProviderStatus?: string | null;
+
+  @ApiPropertyOptional({ format: 'date-time', nullable: true })
+  shippingLastSyncedAt?: string | null;
+
   @ApiProperty({ example: '30000' })
   shippingFee!: string;
 }
@@ -303,6 +309,24 @@ export class OrderDetailResponseDto {
 
   @ApiProperty({ example: '330000' })
   totalAmount!: string;
+
+  @ApiPropertyOptional({
+    example: 800,
+    description: 'Thuế suất VAT tính bằng bps',
+  })
+  taxRateBps?: number | null;
+
+  @ApiPropertyOptional({
+    example: '24444',
+    description: 'Tiền thuế VAT bóc tách',
+  })
+  taxAmount?: string | null;
+
+  @ApiPropertyOptional({
+    example: '305556',
+    description: 'Tiền hàng trước thuế VAT',
+  })
+  netAmount?: string | null;
 
   @ApiPropertyOptional({ nullable: true })
   customerNote!: string | null;

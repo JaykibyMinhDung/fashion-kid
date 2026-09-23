@@ -7,7 +7,12 @@ import {
   Logger,
 } from '@nestjs/common';
 import type { Request, Response } from 'express';
-import { ApiErrorCode, ApiErrorResponse, ApiException } from './api-error';
+import {
+  ApiErrorCode,
+  ApiErrorDetail,
+  ApiErrorResponse,
+  ApiException,
+} from './api-error';
 import { getRequestId } from '../http/request-id';
 
 type PublicHttpError = { code: ApiErrorCode; message: string };
@@ -65,6 +70,7 @@ export class ApiExceptionFilter implements ExceptionFilter {
         statusCode: exception.getStatus(),
         code: exception.code,
         message: exception.publicMessage,
+        ...(exception.details ? { details: exception.details } : {}),
         ...(requestId ? { requestId } : {}),
       };
     }
@@ -72,9 +78,25 @@ export class ApiExceptionFilter implements ExceptionFilter {
     if (exception instanceof HttpException) {
       const statusCode = exception.getStatus();
       const mapped = mapHttpError(statusCode);
+
+      // Extract class-validator details from BadRequestException (400)
+      let details: ApiErrorDetail[] | undefined;
+      if (statusCode === 400) {
+        const raw = exception.getResponse();
+        if (typeof raw === 'object' && raw !== null && 'message' in raw) {
+          const msgs = (raw as Record<string, unknown>).message;
+          if (Array.isArray(msgs)) {
+            details = msgs
+              .filter((m): m is string => typeof m === 'string')
+              .map((m) => ({ field: '_', message: m }));
+          }
+        }
+      }
+
       return {
         statusCode,
         ...mapped,
+        ...(details && details.length > 0 ? { details } : {}),
         ...(requestId ? { requestId } : {}),
       };
     }

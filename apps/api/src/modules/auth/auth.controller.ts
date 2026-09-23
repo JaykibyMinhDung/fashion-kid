@@ -25,10 +25,17 @@ import { Public } from '../../common/auth/public.decorator';
 import { getRequestId } from '../../common/http/request-id';
 import { SessionCookieService } from '../../common/security/session-cookie.service';
 import { AuthService } from './auth.service';
+import { PasswordResetService } from './services/password-reset.service';
+import { EmailVerificationService } from './services/email-verification.service';
 import {
   ChangePasswordRequestDto,
+  ForgotPasswordRequestDto,
   LoginRequestDto,
   RegisterRequestDto,
+  ResendVerificationRequestDto,
+  ResetPasswordRequestDto,
+  VerifyEmailRequestDto,
+  VerifyOtpRequestDto,
 } from './dto/auth-request.dto';
 import {
   AuthSessionResponseDto,
@@ -62,6 +69,8 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly cookieService: SessionCookieService,
+    private readonly passwordResetService: PasswordResetService,
+    private readonly emailVerificationService: EmailVerificationService,
   ) {}
 
   @Post('register')
@@ -85,7 +94,7 @@ export class AuthController {
   @Post('login')
   @Public()
   @SkipThrottle({ default: false })
-  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AuthSessionResponseDto })
   async login(
@@ -166,6 +175,82 @@ export class AuthController {
       requestContext(request),
     );
     this.clearRefreshCookie(response);
+  }
+
+  @Post('forgot-password')
+  @Public()
+  @SkipThrottle({ default: false })
+  @Throttle({ default: { limit: 3, ttl: 900_000 } })
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(
+    @Body() body: ForgotPasswordRequestDto,
+    @Req() request: Request,
+  ): Promise<{ message: string }> {
+    return this.passwordResetService.requestReset(
+      body.email,
+      requestContext(request),
+    );
+  }
+
+  @Post('reset-password/verify-otp')
+  @Public()
+  @SkipThrottle({ default: false })
+  @Throttle({ default: { limit: 5, ttl: 900_000 } })
+  @HttpCode(HttpStatus.OK)
+  async verifyOtp(
+    @Body() body: VerifyOtpRequestDto,
+    @Req() request: Request,
+  ): Promise<{ resetToken: string }> {
+    return this.passwordResetService.verifyOtp(
+      body.email,
+      body.otp,
+      requestContext(request),
+    );
+  }
+
+  @Post('reset-password')
+  @Public()
+  @HttpCode(HttpStatus.NO_CONTENT)
+  @ApiNoContentResponse()
+  async resetPassword(
+    @Body() body: ResetPasswordRequestDto,
+    @Req() request: Request,
+    @Res({ passthrough: true }) response: Response,
+  ): Promise<void> {
+    await this.passwordResetService.resetPassword(
+      body.token,
+      body.newPassword,
+      requestContext(request),
+    );
+    this.clearRefreshCookie(response);
+  }
+
+  @Post('verify-email')
+  @Public()
+  @HttpCode(HttpStatus.OK)
+  async verifyEmail(
+    @Body() body: VerifyEmailRequestDto,
+    @Req() request: Request,
+  ): Promise<{ success: boolean; message: string }> {
+    return this.emailVerificationService.verifyEmail(
+      body.token,
+      requestContext(request),
+    );
+  }
+
+  @Post('resend-verification')
+  @Public()
+  @SkipThrottle({ default: false })
+  @Throttle({ default: { limit: 3, ttl: 900_000 } })
+  @HttpCode(HttpStatus.OK)
+  async resendVerification(
+    @Body() body: ResendVerificationRequestDto,
+    @Req() request: Request,
+  ): Promise<{ message: string }> {
+    return this.emailVerificationService.resendVerification(
+      body.email,
+      requestContext(request),
+    );
   }
 
   private setRefreshCookie(

@@ -42,6 +42,28 @@ export type ChangePasswordInput = {
   newPassword: string;
 };
 
+export type ForgotPasswordInput = {
+  email: string;
+};
+
+export type VerifyOtpInput = {
+  email: string;
+  otp: string;
+};
+
+export type ResetPasswordInput = {
+  token: string;
+  newPassword: string;
+};
+
+export type VerifyEmailInput = {
+  token: string;
+};
+
+export type ResendVerificationInput = {
+  email: string;
+};
+
 export type {
   ApiError,
   ApiErrorCode,

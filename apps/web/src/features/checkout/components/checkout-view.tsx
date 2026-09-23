@@ -57,8 +57,9 @@ export function CheckoutView() {
     };
   }, [authorizedRequest]);
 
-  function handleSuccess(orderNumber: string) {
-    router.push(`/order-success/${orderNumber}`);
+  function handleSuccess(orderNumber: string, paymentMethod: "COD" | "ONLINE") {
+    const params = new URLSearchParams({ payment: paymentMethod });
+    router.push(`/order-success/${orderNumber}?${params.toString()}`);
   }
 
   if (isLoading) {
@@ -151,7 +152,7 @@ export function CheckoutView() {
       <div className="flex items-center justify-between">
         <PageHeader
           title="Thanh toán đơn hàng"
-          description="Kiểm tra thông tin giao nhận và xác nhận đặt hàng COD"
+          description="Kiểm tra thông tin giao nhận và xác nhận đặt hàng"
         />
         <Link
           href="/cart"

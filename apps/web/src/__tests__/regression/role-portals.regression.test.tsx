@@ -149,7 +149,7 @@ describe("REG-ROLES-001: authenticated portal boundaries", () => {
     expect(navigation.replace).not.toHaveBeenCalled();
   });
 
-  it("does not expose the Sales order queue before its contract is ready", async () => {
+  it("shows the Sales order management entry on the dashboard", async () => {
     renderPortal(
       "SALES_STAFF",
       "/sales/dashboard",
@@ -165,12 +165,15 @@ describe("REG-ROLES-001: authenticated portal boundaries", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Order Queue chưa mở" }),
+      screen.getByRole("heading", { name: "Quản lý đơn hàng" }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Xem đơn hàng" }),
+    ).toHaveAttribute("href", "/sales/orders");
     expect(navigation.replace).not.toHaveBeenCalled();
   });
 
-  it("keeps Warehouse limited to Inventory while fulfillment is pending", async () => {
+  it("shows Warehouse inventory and order-processing entries on the dashboard", async () => {
     renderPortal(
       "WAREHOUSE_STAFF",
       "/warehouse/dashboard",
@@ -186,7 +189,10 @@ describe("REG-ROLES-001: authenticated portal boundaries", () => {
       }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Packing Queue chưa mở" }),
+      screen.getByRole("heading", { name: "Quản lý tồn kho" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Đơn hàng cần xử lý" }),
     ).toBeInTheDocument();
     expect(navigation.replace).not.toHaveBeenCalled();
   });

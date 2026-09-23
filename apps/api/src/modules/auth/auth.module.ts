@@ -8,16 +8,21 @@ import { SessionCookieService } from '../../common/security/session-cookie.servi
 import { AccessAuthGuard } from '../../common/auth/access-auth.guard';
 import { AuthOriginGuard } from '../../common/auth/auth-origin.guard';
 import { PermissionsGuard } from '../../authorization/permissions.guard';
+import { NotificationModule } from '../notification/notification.module';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { AuthRepository } from './repositories/auth.repository';
 import { PrismaAuthRepository } from './repositories/prisma-auth.repository';
+import { PasswordResetService } from './services/password-reset.service';
+import { EmailVerificationService } from './services/email-verification.service';
 
 @Module({
-  imports: [JwtModule.register({})],
+  imports: [JwtModule.register({}), NotificationModule],
   controllers: [AuthController],
   providers: [
     AuthService,
+    PasswordResetService,
+    EmailVerificationService,
     AccessTokenService,
     PasswordHasher,
     PasswordPolicy,
@@ -30,6 +35,8 @@ import { PrismaAuthRepository } from './repositories/prisma-auth.repository';
   ],
   exports: [
     AuthService,
+    PasswordResetService,
+    EmailVerificationService,
     AccessTokenService,
     AuthRepository,
     AccessAuthGuard,

@@ -30,28 +30,32 @@ model Role {
 }
 
 model User {
-  id                    String                 @id @default(uuid()) @db.Uuid
-  roleId                String                 @map("role_id") @db.Uuid
-  email                 String                 @unique @db.VarChar(255)
-  passwordHash          String                 @map("password_hash") @db.VarChar(255)
-  fullName              String                 @map("full_name") @db.VarChar(150)
-  phone                 String?                @db.VarChar(20)
-  avatarUrl             String?                @map("avatar_url") @db.Text
-  status                UserStatus             @default(ACTIVE)
-  authVersion           Int                    @default(0) @map("auth_version")
-  lastLoginAt           DateTime?              @map("last_login_at") @db.Timestamptz(3)
-  role                  Role                   @relation(fields: [roleId], references: [id], onDelete: Restrict)
-  refreshTokens         RefreshToken[]
-  addresses             Address[]
-  cart                  Cart?
-  orders                Order[]
-  couponUsages          CouponUsage[]
-  reviews               Review[]
-  auditLogs             AuditLog[]             @relation("AuditLogActor")
-  inventoryTransactions InventoryTransaction[] @relation("InventoryTransactionActor")
-  orderStatusChanges    OrderStatusHistory[]   @relation("OrderStatusActor")
-  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt             DateTime               @updatedAt @map("updated_at") @db.Timestamptz(3)
+  id                      String                   @id @default(uuid()) @db.Uuid
+  roleId                  String                   @map("role_id") @db.Uuid
+  email                   String                   @unique @db.VarChar(255)
+  passwordHash            String                   @map("password_hash") @db.VarChar(255)
+  fullName                String                   @map("full_name") @db.VarChar(150)
+  phone                   String?                  @db.VarChar(20)
+  avatarUrl               String?                  @map("avatar_url") @db.Text
+  status                  UserStatus               @default(ACTIVE)
+  authVersion             Int                      @default(0) @map("auth_version")
+  emailVerifiedAt         DateTime?                @map("email_verified_at") @db.Timestamptz(3)
+  lastLoginAt             DateTime?                @map("last_login_at") @db.Timestamptz(3)
+  role                    Role                     @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  refreshTokens           RefreshToken[]
+  passwordResetTokens     PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+  addresses               Address[]
+  cart                    Cart?
+  orders                  Order[]
+  couponUsages            CouponUsage[]
+  reviews                 Review[]
+  auditLogs               AuditLog[]               @relation("AuditLogActor")
+  inventoryTransactions   InventoryTransaction[]   @relation("InventoryTransactionActor")
+  orderStatusChanges      OrderStatusHistory[]     @relation("OrderStatusActor")
+  wishlistItems           WishlistItem[]
+  createdAt               DateTime                 @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt               DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([roleId])
   @@index([status])
@@ -173,9 +177,10 @@ model Product {
   brand       Brand?           @relation(fields: [brandId], references: [id], onDelete: Restrict)
   images      ProductImage[]
   variants    ProductVariant[]
-  reviews     Review[]
-  createdAt   DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
-  updatedAt   DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
+  reviews       Review[]
+  wishlistItems WishlistItem[]
+  createdAt     DateTime         @default(now()) @map("created_at") @db.Timestamptz(3)
+  updatedAt     DateTime         @updatedAt @map("updated_at") @db.Timestamptz(3)
 
   @@index([categoryId, status])
   @@index([brandId])
@@ -413,6 +418,10 @@ model Order {
   statusHistories        OrderStatusHistory[]
   payment                Payment?
   couponUsage            CouponUsage?
+  taxRateBps             Int?                 @map("tax_rate_bps")
+  taxAmount              BigInt?              @map("tax_amount") @db.BigInt
+  netAmount              BigInt?              @map("net_amount") @db.BigInt
+  invoice                Invoice?
   createdAt              DateTime             @default(now()) @map("created_at") @db.Timestamptz(3)
   updatedAt              DateTime             @updatedAt @map("updated_at") @db.Timestamptz(3)
 
@@ -420,6 +429,7 @@ model Order {
   @@index([userId, createdAt])
   @@index([status, createdAt])
   @@index([completedAt])
+  @@index([status, completedAt])
   @@index([shippingTrackingCode])
   @@map("orders")
 }
@@ -466,6 +476,44 @@ model OrderCounter {
   lastValue Int      @default(0) @map("last_value")
 
   @@map("order_counters")
+}
+
+model InvoiceCounter {
+  yearMonth String @id @map("year_month") @db.VarChar(6)
+  lastValue Int    @default(0) @map("last_value")
+
+  @@map("invoice_counters")
+}
+
+// Invoice
+
+enum InvoiceStatus {
+  ISSUED
+  VOID
+
+  @@map("invoice_status")
+}
+
+model Invoice {
+  id             String        @id @default(uuid()) @db.Uuid
+  orderId        String        @unique @map("order_id") @db.Uuid
+  invoiceNumber  String        @unique @map("invoice_number") @db.VarChar(30)
+  status         InvoiceStatus @default(ISSUED)
+  issuedAt       DateTime      @map("issued_at") @db.Timestamptz(3)
+  voidedAt       DateTime?     @map("voided_at") @db.Timestamptz(3)
+  currency       String        @default("VND") @db.VarChar(3)
+  netAmount      BigInt        @map("net_amount") @db.BigInt
+  taxRateBps     Int           @map("tax_rate_bps")
+  taxAmount      BigInt        @map("tax_amount") @db.BigInt
+  grossAmount    BigInt        @map("gross_amount") @db.BigInt
+  sellerSnapshot Json          @map("seller_snapshot") @db.JsonB
+  buyerSnapshot  Json          @map("buyer_snapshot") @db.JsonB
+  createdAt      DateTime      @default(now()) @map("created_at") @db.Timestamptz(3)
+  order          Order         @relation(fields: [orderId], references: [id], onDelete: Restrict)
+
+  @@index([issuedAt])
+  @@index([status, issuedAt])
+  @@map("invoices")
 }
 
 // Payment
@@ -639,4 +687,76 @@ model AuditLog {
   @@index([entityType, entityId, createdAt])
   @@index([action, createdAt])
   @@map("audit_logs")
+}
+
+// Email & Notification (Day 30)
+
+enum EmailOutboxStatus {
+  PENDING
+  SENT
+  FAILED
+
+  @@map("email_outbox_status")
+}
+
+model EmailOutbox {
+  id            String            @id @default(uuid()) @db.Uuid
+  dedupeKey     String            @unique @map("dedupe_key") @db.VarChar(200)
+  toEmail       String            @map("to_email") @db.VarChar(255)
+  template      String            @db.VarChar(80)
+  payload       Json
+  status        EmailOutboxStatus @default(PENDING)
+  attempts      Int               @default(0)
+  maxAttempts   Int               @default(5) @map("max_attempts")
+  nextAttemptAt DateTime          @map("next_attempt_at") @db.Timestamptz(3)
+  lastError     String?           @map("last_error") @db.VarChar(500)
+  sentAt        DateTime?         @map("sent_at") @db.Timestamptz(3)
+  createdAt     DateTime          @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@index([status, nextAttemptAt])
+  @@map("email_outbox")
+}
+
+model PasswordResetToken {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  otpHash       String    @map("otp_hash") @db.VarChar(255)
+  linkTokenHash String    @unique @map("link_token_hash") @db.VarChar(255)
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz(3)
+  consumedAt    DateTime? @map("consumed_at") @db.Timestamptz(3)
+  attempts      Int       @default(0)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("password_reset_tokens")
+}
+
+model EmailVerificationToken {
+  id         String    @id @default(uuid()) @db.Uuid
+  userId     String    @map("user_id") @db.Uuid
+  tokenHash  String    @unique @map("token_hash") @db.VarChar(255)
+  expiresAt  DateTime  @map("expires_at") @db.Timestamptz(3)
+  consumedAt DateTime? @map("consumed_at") @db.Timestamptz(3)
+  createdAt  DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("email_verification_tokens")
+}
+
+// Wishlist
+
+model WishlistItem {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+
+  @@unique([userId, productId])
+  @@index([userId, createdAt])
+  @@index([productId])
+  @@map("wishlist_items")
 }

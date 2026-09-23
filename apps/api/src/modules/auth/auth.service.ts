@@ -1,6 +1,13 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import {
+  HttpStatus,
+  Injectable,
+  Logger,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { randomUUID } from 'node:crypto';
+import { ApiException } from '../../common/errors/api-error';
 import { AccessTokenService } from '../../common/security/access-token.service';
 import {
   canonicalizeEmail,
@@ -29,6 +36,7 @@ import {
   toPublicUser,
 } from './auth.types';
 import { AuthRepository } from './repositories/auth.repository';
+import { EmailVerificationService } from './services/email-verification.service';
 
 const DUMMY_PASSWORD = 'dummy password used only for timing balance';
 
@@ -76,6 +84,8 @@ export class AuthService implements OnModuleInit {
     private readonly refreshTokenService: RefreshTokenService,
     private readonly accessTokenService: AccessTokenService,
     configService: ConfigService,
+    @Optional()
+    private readonly emailVerificationService?: EmailVerificationService,
   ) {
     this.accessTokenTtlSeconds = configService.getOrThrow<number>(
       'ACCESS_TOKEN_TTL_SECONDS',
@@ -135,6 +145,16 @@ export class AuthService implements OnModuleInit {
           entityId: createdUser.id,
           context: command.context,
         });
+        if (this.emailVerificationService) {
+          await this.emailVerificationService.sendVerificationEmail(
+            transaction,
+            {
+              id: createdUser.id,
+              email: createdUser.email,
+              fullName: createdUser.fullName,
+            },
+          );
+        }
         return createdUser;
       });
     } catch {
@@ -158,6 +178,14 @@ export class AuthService implements OnModuleInit {
     if (!user || !passwordMatches || user.status !== 'ACTIVE') {
       await this.recordLoginFailure(command.context, user?.id);
       throw invalidCredentialsError();
+    }
+
+    if (user.emailVerifiedAt === null) {
+      throw new ApiException(
+        HttpStatus.FORBIDDEN,
+        'EMAIL_NOT_VERIFIED',
+        'Tài khoản chưa được xác thực email. Vui lòng kiểm tra hộp thư hoặc yêu cầu gửi lại email kích hoạt.',
+      );
     }
 
     const issued = this.createRefreshSession(command.remember);

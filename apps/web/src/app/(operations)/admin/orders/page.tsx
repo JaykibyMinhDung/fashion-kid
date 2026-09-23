@@ -1,6 +1,7 @@
 'use client';
 
-import { LoaderCircle, Search } from 'lucide-react';
+import { LoaderCircle, Receipt, Search } from 'lucide-react';
+import Link from 'next/link';
 import { type FormEvent, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input, Select } from '@/components/ui/input';
@@ -85,6 +86,15 @@ export default function AdminOrdersPage() {
         eyebrow="Quản trị hệ thống"
         title="Quản lý đơn hàng"
         description="Giám sát toàn bộ vòng đời và can thiệp vận hành đơn hàng"
+        action={
+          <Link
+            href="/admin/invoices"
+            className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-surface-soft shadow-sm transition-colors"
+          >
+            <Receipt className="h-4 w-4 text-muted" />
+            Hoá đơn & Thuế GTGT
+          </Link>
+        }
       />
 
       {/* Filter and Search Toolbar */}

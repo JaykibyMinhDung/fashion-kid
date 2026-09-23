@@ -65,6 +65,8 @@ describe('Auth HTTP contract (e2e)', () => {
 
   afterAll(async () => {
     if (userId) {
+      await prisma.emailVerificationToken.deleteMany({ where: { userId } });
+      await prisma.passwordResetToken.deleteMany({ where: { userId } });
       await prisma.auditLog.deleteMany({ where: { entityId: userId } });
     }
     await prisma.user.deleteMany({ where: { email } });
@@ -104,6 +106,7 @@ describe('Auth HTTP contract (e2e)', () => {
         phone: '+84901234567',
         avatarUrl: null,
         role: 'CUSTOMER',
+        emailVerifiedAt: null,
       },
     });
     expect(registered.user).not.toHaveProperty('passwordHash');
@@ -155,6 +158,18 @@ describe('Auth HTTP contract (e2e)', () => {
     expect(
       typeof (wrongCredentials.body as { requestId?: unknown }).requestId,
     ).toBe('string');
+
+    // Reject login when email is not verified
+    await request(server)
+      .post('/api/v1/auth/login')
+      .send({ email, password: originalPassword, remember: true })
+      .expect(403);
+
+    // Verify email directly in database
+    await prisma.user.update({
+      where: { email },
+      data: { emailVerifiedAt: new Date() },
+    });
 
     const loginResponse = await request(server)
       .post('/api/v1/auth/login')
@@ -213,7 +228,11 @@ describe('Auth HTTP contract (e2e)', () => {
   it('rejects unknown request fields and documents all auth operations', async () => {
     await request(server)
       .post('/api/v1/auth/login')
-      .send({ email, password: changedPassword, role: 'ADMIN' })
+      .send({
+        email: `validation-${runId}@auth-e2e.test`,
+        password: changedPassword,
+        role: 'ADMIN',
+      })
       .expect(400)
       .expect(({ body }) => {
         expect(body).toEqual(

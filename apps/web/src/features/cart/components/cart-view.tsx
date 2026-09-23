@@ -17,6 +17,7 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PageHeader } from "@/components/ui/page-header";
+import { SafeImage } from "@/components/shared/safe-image";
 import { ApiClientError } from "@/lib/api/api-client";
 import { useAuth } from "@/features/auth/session/auth-provider";
 import { formatCurrency } from "@/lib/utils";
@@ -62,12 +63,15 @@ function CartItemRow({
   const warning = warningLabel(item);
   return (
     <li className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center">
-      <div
-        className="h-28 w-28 shrink-0 rounded-2xl bg-cover bg-center bg-surface-soft"
-        style={{ backgroundImage: `url("${imageUrl}")` }}
-        role="img"
-        aria-label={item.primaryImage?.altText ?? item.product.name}
-      />
+      <div className="relative h-28 w-28 shrink-0 overflow-hidden rounded-2xl bg-surface-soft">
+        <SafeImage
+          src={imageUrl}
+          alt={item.primaryImage?.altText ?? item.product.name}
+          fill
+          sizes="112px"
+          className="object-cover"
+        />
+      </div>
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
