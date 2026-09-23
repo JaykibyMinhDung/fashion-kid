@@ -70,7 +70,7 @@ describe("Reporting Components", () => {
       );
 
       expect(
-        screen.getByText("Biểu đồ Doanh thu hoàn tất"),
+        screen.getByText("Biểu đồ doanh thu"),
       ).toBeInTheDocument();
       expect(screen.getByText(/800\.000/)).toBeInTheDocument();
       expect(screen.getByText(/2 đơn/)).toBeInTheDocument();
@@ -108,9 +108,10 @@ describe("Reporting Components", () => {
       expect(
         screen.getByText("Phân bổ trạng thái đơn hàng"),
       ).toBeInTheDocument();
-      expect(screen.getByText(/10 đơn/)).toBeInTheDocument();
+      expect(screen.getByText(/Tạo mới/)).toBeInTheDocument();
+      expect(screen.getByText("12")).toBeInTheDocument();
       expect(screen.getByText("Hoàn tất")).toBeInTheDocument();
-      expect(screen.getByText("80%")).toBeInTheDocument();
+      expect(screen.getByText("80.0%")).toBeInTheDocument();
       expect(screen.getByText("Đã hủy")).toBeInTheDocument();
       expect(screen.getByText("Chờ xác nhận")).toBeInTheDocument();
     });

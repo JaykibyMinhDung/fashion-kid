@@ -53,23 +53,23 @@ describe("reporting-client", () => {
 
     expect(calls).toEqual([
       {
-        path: "/api/v1/reporting/summary?from=2026-09-01&to=2026-09-08",
+        path: "/api/v1/admin/reports/summary?from=2026-09-01&to=2026-09-08",
         method: "GET",
       },
       {
-        path: "/api/v1/reporting/revenue?from=2026-09-01&to=2026-09-08&granularity=day",
+        path: "/api/v1/admin/reports/revenue?from=2026-09-01&to=2026-09-08&granularity=day",
         method: "GET",
       },
       {
-        path: "/api/v1/reporting/orders?from=2026-09-01&to=2026-09-08",
+        path: "/api/v1/admin/reports/orders?from=2026-09-01&to=2026-09-08",
         method: "GET",
       },
       {
-        path: "/api/v1/reporting/products?from=2026-09-01&to=2026-09-08&limit=5&sortBy=revenue",
+        path: "/api/v1/admin/reports/products?from=2026-09-01&to=2026-09-08&limit=5&sortBy=revenue",
         method: "GET",
       },
       {
-        path: "/api/v1/reporting/inventory?threshold=5&limit=10",
+        path: "/api/v1/admin/reports/inventory?threshold=5&limit=10",
         method: "GET",
       },
     ]);

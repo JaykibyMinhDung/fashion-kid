@@ -8,7 +8,6 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
-  Req,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -17,9 +16,10 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { Request } from 'express';
 
-import { RequirePermissions } from '../../../authorization/require-permissions.decorator';
+import { RequirePermissions } from '../../authorization/require-permissions.decorator';
+import type { AuthenticatedRequestUser } from '../../common/auth/authenticated-user';
+import { CurrentUser } from '../../common/auth/current-user.decorator';
 import {
   AddToWishlistDto,
   WishlistCheckResponseDto,
@@ -37,9 +37,10 @@ export class WishlistController {
   @RequirePermissions('WISHLIST_READ_OWN')
   @ApiOperation({ summary: 'Lấy danh sách sản phẩm yêu thích' })
   @ApiOkResponse({ type: WishlistResponseDto })
-  async getWishlist(@Req() req: Request): Promise<WishlistResponseDto> {
-    const userId = (req as any).user.sub;
-    const items = await this.wishlistService.getWishlist(userId);
+  async getWishlist(
+    @CurrentUser() user: AuthenticatedRequestUser,
+  ): Promise<WishlistResponseDto> {
+    const items = await this.wishlistService.getWishlist(user.id);
     return { items, total: items.length };
   }
 
@@ -48,11 +49,10 @@ export class WishlistController {
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Thêm sản phẩm vào danh sách yêu thích' })
   async addToWishlist(
-    @Req() req: Request,
+    @CurrentUser() user: AuthenticatedRequestUser,
     @Body() dto: AddToWishlistDto,
   ): Promise<{ message: string }> {
-    const userId = (req as any).user.sub;
-    await this.wishlistService.addToWishlist(userId, dto.productId);
+    await this.wishlistService.addToWishlist(user.id, dto.productId);
     return { message: 'Product added to wishlist' };
   }
 
@@ -62,11 +62,10 @@ export class WishlistController {
   @ApiOperation({ summary: 'Xóa sản phẩm khỏi danh sách yêu thích' })
   @ApiParam({ name: 'productId', description: 'Product UUID to remove' })
   async removeFromWishlist(
-    @Req() req: Request,
+    @CurrentUser() user: AuthenticatedRequestUser,
     @Param('productId', new ParseUUIDPipe()) productId: string,
   ): Promise<{ message: string }> {
-    const userId = (req as any).user.sub;
-    await this.wishlistService.removeFromWishlist(userId, productId);
+    await this.wishlistService.removeFromWishlist(user.id, productId);
     return { message: 'Product removed from wishlist' };
   }
 
@@ -76,12 +75,11 @@ export class WishlistController {
   @ApiParam({ name: 'productId', description: 'Product UUID to check' })
   @ApiOkResponse({ type: WishlistCheckResponseDto })
   async checkInWishlist(
-    @Req() req: Request,
+    @CurrentUser() user: AuthenticatedRequestUser,
     @Param('productId', new ParseUUIDPipe()) productId: string,
   ): Promise<WishlistCheckResponseDto> {
-    const userId = (req as any).user.sub;
     const inWishlist = await this.wishlistService.isInWishlist(
-      userId,
+      user.id,
       productId,
     );
     return { inWishlist };
