@@ -96,8 +96,8 @@ function CategoryForm({ categories, editing, onClose, onSave }: CategoryFormProp
         editing?.id,
       );
       onClose();
-    } catch (err: any) {
-      setError(err?.message ?? "Có lỗi xảy ra.");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Có lỗi xảy ra.");
     } finally {
       setSaving(false);
     }
@@ -252,6 +252,7 @@ export default function CategoriesPage() {
   }, [authorizedRequest, search, statusFilter]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-mount
     fetchCategories();
   }, [fetchCategories]);
 

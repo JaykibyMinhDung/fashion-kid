@@ -3,6 +3,7 @@ import { PrismaService } from '../../../database/prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
 import { ReportingService } from '../reporting.service';
 import { ReportingExportService } from './reporting-export.service';
+import { OrderStatus } from '../../../generated/prisma/client';
 
 describe('ReportingExportService', () => {
   let service: ReportingExportService;
@@ -48,8 +49,8 @@ describe('ReportingExportService', () => {
 
   const mockOrders = {
     currentDistribution: [
-      { status: 'DELIVERED' as any, count: 18, percentage: 90.0 },
-      { status: 'CANCELLED' as any, count: 2, percentage: 10.0 },
+      { status: 'DELIVERED' as OrderStatus, count: 18, percentage: 90.0 },
+      { status: 'CANCELLED' as OrderStatus, count: 2, percentage: 10.0 },
     ],
     totalCurrentOrders: 20,
     periodCreatedOrders: 20,

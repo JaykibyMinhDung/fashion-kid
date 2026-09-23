@@ -74,7 +74,9 @@ describe('ApiExceptionFilter', () => {
     filter.catch(new BadRequestException('Simple error string'), host);
 
     expect(status).toHaveBeenCalledWith(400);
-    const body = json.mock.calls[0][0];
+    const body = (
+      json.mock.calls[0] as [{ code?: string; details?: unknown }]
+    )[0];
     expect(body.code).toBe('VALIDATION_ERROR');
     expect(body.details).toBeUndefined();
   });

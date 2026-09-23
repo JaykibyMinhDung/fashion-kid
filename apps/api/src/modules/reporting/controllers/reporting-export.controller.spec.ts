@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import type { Response } from 'express';
+import type { Request, Response } from 'express';
 import { createWorkbook } from '../export/excel-workbook.builder';
 import { ReportingExportService } from '../export/reporting-export.service';
 import { ReportingExportController } from './reporting-export.controller';
@@ -17,7 +17,7 @@ describe('ReportingExportController', () => {
   const mockReq = {
     ip: '127.0.0.1',
     headers: { 'x-request-id': 'req-test-123' },
-  } as any;
+  } as unknown as Request;
 
   let mockRes: {
     setHeader: jest.Mock;
@@ -31,10 +31,12 @@ describe('ReportingExportController', () => {
 
     mockRes = {
       setHeader: jest.fn(),
-      write: jest.fn((_chunk: unknown, callback?: (err?: Error | null) => void) => {
-        if (callback) callback();
-        return true;
-      }),
+      write: jest.fn(
+        (_chunk: unknown, callback?: (err?: Error | null) => void) => {
+          if (callback) callback();
+          return true;
+        },
+      ),
       end: jest.fn(),
     };
 
@@ -55,9 +57,7 @@ describe('ReportingExportController', () => {
 
     const module: TestingModule = await Test.createTestingModule({
       controllers: [ReportingExportController],
-      providers: [
-        { provide: ReportingExportService, useValue: exportService },
-      ],
+      providers: [{ provide: ReportingExportService, useValue: exportService }],
     }).compile();
 
     controller = module.get<ReportingExportController>(

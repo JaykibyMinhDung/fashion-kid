@@ -42,6 +42,7 @@ export default function SalesDashboardPage() {
   }, [authorizedRequest]);
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-mount
     fetchSummary();
   }, [fetchSummary]);
 

@@ -63,14 +63,16 @@ export class ReportingExportService {
         entityType: 'ReportingExport',
         metadata: {
           reportType,
-          query: (query ?? {}) as Record<string, unknown>,
+          query: query ?? {},
           exportedAt: new Date().toISOString(),
         },
         ipAddress: context?.ipAddress ?? null,
         requestId: context?.requestId ?? null,
       });
     } catch (err) {
-      this.logger.warn(`Failed to record audit for ${reportType} export: ${String(err)}`);
+      this.logger.warn(
+        `Failed to record audit for ${reportType} export: ${String(err)}`,
+      );
     }
   }
 
@@ -252,7 +254,11 @@ export class ReportingExportService {
     // 1. TongQuan
     const summarySheet = workbook.addWorksheet('TongQuan');
     if (summaryRes.status === 'fulfilled') {
-      ReportSheetRegistry.buildSummarySheet(summarySheet, summaryRes.value, dateRangeText);
+      ReportSheetRegistry.buildSummarySheet(
+        summarySheet,
+        summaryRes.value,
+        dateRangeText,
+      );
     } else {
       applyStandardSheetLayout(summarySheet, {
         title: 'Báo cáo tổng quan KPI',
@@ -265,7 +271,11 @@ export class ReportingExportService {
     // 2. DoanhThu
     const revenueSheet = workbook.addWorksheet('DoanhThu');
     if (revenueRes.status === 'fulfilled') {
-      ReportSheetRegistry.buildRevenueSheet(revenueSheet, revenueRes.value, dateRangeText);
+      ReportSheetRegistry.buildRevenueSheet(
+        revenueSheet,
+        revenueRes.value,
+        dateRangeText,
+      );
     } else {
       applyStandardSheetLayout(revenueSheet, {
         title: 'Báo cáo doanh thu',
@@ -278,7 +288,11 @@ export class ReportingExportService {
     // 3. DonHang
     const ordersSheet = workbook.addWorksheet('DonHang');
     if (ordersRes.status === 'fulfilled') {
-      ReportSheetRegistry.buildOrdersSheet(ordersSheet, ordersRes.value, dateRangeText);
+      ReportSheetRegistry.buildOrdersSheet(
+        ordersSheet,
+        ordersRes.value,
+        dateRangeText,
+      );
     } else {
       applyStandardSheetLayout(ordersSheet, {
         title: 'Báo cáo đơn hàng',
@@ -291,7 +305,11 @@ export class ReportingExportService {
     // 4. TopSanPham
     const productsSheet = workbook.addWorksheet('TopSanPham');
     if (productsRes.status === 'fulfilled') {
-      ReportSheetRegistry.buildTopProductsSheet(productsSheet, productsRes.value, dateRangeText);
+      ReportSheetRegistry.buildTopProductsSheet(
+        productsSheet,
+        productsRes.value,
+        dateRangeText,
+      );
     } else {
       applyStandardSheetLayout(productsSheet, {
         title: 'Báo cáo sản phẩm bán chạy',
@@ -304,7 +322,10 @@ export class ReportingExportService {
     // 5. TonKho
     const inventorySheet = workbook.addWorksheet('TonKho');
     if (inventoryRes.status === 'fulfilled') {
-      ReportSheetRegistry.buildInventorySheet(inventorySheet, inventoryRes.value);
+      ReportSheetRegistry.buildInventorySheet(
+        inventorySheet,
+        inventoryRes.value,
+      );
     } else {
       applyStandardSheetLayout(inventorySheet, {
         title: 'Báo cáo tồn kho',
@@ -316,14 +337,23 @@ export class ReportingExportService {
     // 6. Coupon
     const couponsSheet = workbook.addWorksheet('Coupon');
     if (couponsRes.status === 'fulfilled') {
-      ReportSheetRegistry.buildCouponsSheet(couponsSheet, couponsRes.value, dateRangeText);
+      ReportSheetRegistry.buildCouponsSheet(
+        couponsSheet,
+        couponsRes.value,
+        dateRangeText,
+      );
     } else {
       applyStandardSheetLayout(couponsSheet, {
         title: 'Báo cáo mã khuyến mãi',
         dateRangeText,
         columns: [{ header: 'Lỗi', key: 'error', width: 40 }],
       });
-      addEmptyStateRow(couponsSheet, 5, 1, 'Không thể tải dữ liệu mã khuyến mãi');
+      addEmptyStateRow(
+        couponsSheet,
+        5,
+        1,
+        'Không thể tải dữ liệu mã khuyến mãi',
+      );
     }
 
     // 7. DanhGia
@@ -341,7 +371,11 @@ export class ReportingExportService {
     // 8. ThanhToan
     const paymentsSheet = workbook.addWorksheet('ThanhToan');
     if (paymentsRes.status === 'fulfilled') {
-      ReportSheetRegistry.buildPaymentsSheet(paymentsSheet, paymentsRes.value, dateRangeText);
+      ReportSheetRegistry.buildPaymentsSheet(
+        paymentsSheet,
+        paymentsRes.value,
+        dateRangeText,
+      );
     } else {
       applyStandardSheetLayout(paymentsSheet, {
         title: 'Báo cáo thanh toán',

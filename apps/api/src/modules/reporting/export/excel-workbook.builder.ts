@@ -278,10 +278,12 @@ export function autoFitColumns(
       if (typeof cellVal === 'object' && 'formula' in cellVal) {
         len = 12;
       } else if (cell.numFmt?.includes('₫')) {
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string -- ước lượng bề rộng cột
         len = String(cellVal).length + 6;
       } else if (cellVal instanceof Date) {
         len = 12;
       } else {
+        // eslint-disable-next-line @typescript-eslint/no-base-to-string -- ước lượng bề rộng cột
         len = String(cellVal).length;
       }
       if (len > maxLen) {

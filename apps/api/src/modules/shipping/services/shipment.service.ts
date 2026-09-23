@@ -303,6 +303,7 @@ export class ShipmentService {
 
   async syncStatus(
     orderId: string,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- giữ tham số cho tương thích API
     actorId: string,
   ): Promise<ShippingBlockDto> {
     const order = await this.prisma.order.findUnique({

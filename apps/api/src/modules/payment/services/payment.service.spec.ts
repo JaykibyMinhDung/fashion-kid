@@ -555,6 +555,7 @@ describe('PaymentService', () => {
         where: { id: mockOrderId },
         data: {
           status: OrderStatus.CONFIRMED,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest asymmetric matcher
           confirmedAt: expect.any(Date),
         },
       });
@@ -563,6 +564,7 @@ describe('PaymentService', () => {
           orderId: mockOrderId,
           fromStatus: OrderStatus.PENDING,
           toStatus: OrderStatus.CONFIRMED,
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- Jest asymmetric matcher
           note: expect.stringContaining('VNPAY-TX-99999'),
         },
       });

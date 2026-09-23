@@ -37,6 +37,7 @@ describe('Reporting Export Module (e2e) - Day 31', () => {
 
   beforeAll(async () => {
     app = await createTestApplication();
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment -- getHttpServer trả về any theo Nest
     server = app.getHttpServer<App>();
     prisma = app.get(PrismaService);
 
@@ -82,7 +83,11 @@ describe('Reporting Export Module (e2e) - Day 31', () => {
   afterAll(async () => {
     if (prisma) {
       await prisma.user.deleteMany({
-        where: { id: { in: [customerId, adminId].filter((id): id is string => Boolean(id)) } },
+        where: {
+          id: {
+            in: [customerId, adminId].filter((id): id is string => Boolean(id)),
+          },
+        },
       });
     }
     if (app) {
@@ -107,7 +112,9 @@ describe('Reporting Export Module (e2e) - Day 31', () => {
 
   it('TC-EXP-03: Admin can export consolidated workbook with all 9 sheets and valid XLSX format', async () => {
     const response = await request(server)
-      .get('/api/v1/reporting/export/workbook?from=2026-09-01&to=2026-09-16&granularity=day')
+      .get(
+        '/api/v1/reporting/export/workbook?from=2026-09-01&to=2026-09-16&granularity=day',
+      )
       .set('Authorization', `Bearer ${adminToken}`)
       .buffer(true)
       .parse(parseBinary);
@@ -146,6 +153,7 @@ describe('Reporting Export Module (e2e) - Day 31', () => {
     workbook.eachSheet((sheet) => {
       sheet.eachRow((row) => {
         row.eachCell((cell) => {
+          // eslint-disable-next-line @typescript-eslint/no-base-to-string -- kiểm tra PII, chấp nhận stringify object
           const val = String(cell.value ?? '');
           expect(val).not.toContain('@example.com');
           expect(val).not.toMatch(/09\d{8}/);
@@ -156,12 +164,16 @@ describe('Reporting Export Module (e2e) - Day 31', () => {
     // Check ThueGTGT sheet header
     const taxSheet = workbook.getWorksheet('ThueGTGT');
     expect(taxSheet).toBeDefined();
-    expect(taxSheet?.getCell('A1').value).toContain('BÁO CÁO THUẾ GIÁ TRỊ GIA TĂNG');
+    expect(taxSheet?.getCell('A1').value).toContain(
+      'BÁO CÁO THUẾ GIÁ TRỊ GIA TĂNG',
+    );
   });
 
   it('TC-EXP-04: Admin can export individual revenue series report', async () => {
     const response = await request(server)
-      .get('/api/v1/reporting/revenue/export?from=2026-09-01&to=2026-09-16&granularity=day')
+      .get(
+        '/api/v1/reporting/revenue/export?from=2026-09-01&to=2026-09-16&granularity=day',
+      )
       .set('Authorization', `Bearer ${adminToken}`)
       .buffer(true)
       .parse(parseBinary);

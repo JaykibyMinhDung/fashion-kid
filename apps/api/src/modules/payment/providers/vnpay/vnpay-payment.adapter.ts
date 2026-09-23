@@ -69,10 +69,7 @@ export class VnPayPaymentAdapter extends PaymentProvider {
   verifyIpn(input: VerifyCallbackInput): VerifyCallbackOutput {
     const query = this.normalizeParams(input.params);
     const verify = this.vnpay.verifyIpnCall(query);
-    return mapVnPayVerifyToResult(
-      verify,
-      input.params as Record<string, unknown>,
-    );
+    return mapVnPayVerifyToResult(verify, input.params);
   }
 
   private normalizeParams(

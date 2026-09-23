@@ -606,5 +606,4 @@ describe('OrderTransitionService', () => {
       } satisfies Partial<ApiException>);
     });
   });
-
 });

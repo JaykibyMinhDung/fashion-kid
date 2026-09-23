@@ -80,7 +80,10 @@ export class WishlistController {
     @Param('productId', new ParseUUIDPipe()) productId: string,
   ): Promise<WishlistCheckResponseDto> {
     const userId = (req as any).user.sub;
-    const inWishlist = await this.wishlistService.isInWishlist(userId, productId);
+    const inWishlist = await this.wishlistService.isInWishlist(
+      userId,
+      productId,
+    );
     return { inWishlist };
   }
 }

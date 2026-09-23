@@ -83,10 +83,7 @@ export class WishlistService {
   /**
    * Remove a product from the user's wishlist.
    */
-  async removeFromWishlist(
-    userId: string,
-    productId: string,
-  ): Promise<void> {
+  async removeFromWishlist(userId: string, productId: string): Promise<void> {
     await this.prisma.wishlistItem.deleteMany({
       where: { userId, productId },
     });

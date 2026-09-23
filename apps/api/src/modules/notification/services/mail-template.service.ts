@@ -265,6 +265,7 @@ export class MailTemplateService {
     });
   }
 
+  // eslint-disable-next-line @typescript-eslint/require-await -- giữ Promise interface, có thể async hoá sau
   async render(
     templateName: string,
     payload: Record<string, unknown>,

@@ -87,5 +87,4 @@ export class PaymentController {
   ): Promise<VnPayReturnResponseDto> {
     return this.paymentService.handleReturn(query);
   }
-
 }

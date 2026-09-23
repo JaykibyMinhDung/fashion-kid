@@ -131,6 +131,7 @@ export function WishlistPageView() {
 
   useEffect(() => {
     if (!user) return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-mount
     fetchWishlist();
   }, [user, fetchWishlist]);
 

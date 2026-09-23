@@ -33,7 +33,12 @@ export class ReportSheetRegistry {
     const columns = [
       { header: 'Chỉ số KPI', key: 'kpi', width: 35 },
       { header: 'Giá trị', key: 'value', width: 22, align: 'right' as const },
-      { header: 'Đơn vị tính', key: 'unit', width: 18, align: 'center' as const },
+      {
+        header: 'Đơn vị tính',
+        key: 'unit',
+        width: 18,
+        align: 'center' as const,
+      },
     ];
 
     applyStandardSheetLayout(sheet, {
@@ -136,8 +141,18 @@ export class ReportSheetRegistry {
   ): void {
     const columns = [
       { header: 'Mốc thời gian', key: 'date', width: 20 },
-      { header: 'Doanh thu hoàn tất (Gross)', key: 'gross', width: 28, align: 'right' as const },
-      { header: 'Số đơn hoàn tất', key: 'orders', width: 20, align: 'right' as const },
+      {
+        header: 'Doanh thu hoàn tất (Gross)',
+        key: 'gross',
+        width: 28,
+        align: 'right' as const,
+      },
+      {
+        header: 'Số đơn hoàn tất',
+        key: 'orders',
+        width: 20,
+        align: 'right' as const,
+      },
     ];
 
     applyStandardSheetLayout(sheet, {
@@ -170,8 +185,18 @@ export class ReportSheetRegistry {
     const totalRow = sheet.getRow(endRow + 1);
     totalRow.height = 24;
     textCell(totalRow.getCell(1), 'TỔNG CỘNG', 'center');
-    formulaCell(totalRow.getCell(2), `SUM(B${startRow}:B${endRow})`, '#,##0" ₫"', true);
-    formulaCell(totalRow.getCell(3), `SUM(C${startRow}:C${endRow})`, '#,##0', true);
+    formulaCell(
+      totalRow.getCell(2),
+      `SUM(B${startRow}:B${endRow})`,
+      '#,##0" ₫"',
+      true,
+    );
+    formulaCell(
+      totalRow.getCell(3),
+      `SUM(C${startRow}:C${endRow})`,
+      '#,##0',
+      true,
+    );
 
     for (let c = 1; c <= columns.length; c++) {
       const cell = totalRow.getCell(c);
@@ -192,8 +217,18 @@ export class ReportSheetRegistry {
   ): void {
     const columns = [
       { header: 'Trạng thái đơn hàng', key: 'status', width: 26 },
-      { header: 'Số lượng đơn', key: 'count', width: 18, align: 'right' as const },
-      { header: 'Tỷ lệ phân bổ (%)', key: 'pct', width: 20, align: 'right' as const },
+      {
+        header: 'Số lượng đơn',
+        key: 'count',
+        width: 18,
+        align: 'right' as const,
+      },
+      {
+        header: 'Tỷ lệ phân bổ (%)',
+        key: 'pct',
+        width: 20,
+        align: 'right' as const,
+      },
     ];
 
     applyStandardSheetLayout(sheet, {
@@ -225,7 +260,12 @@ export class ReportSheetRegistry {
     const totalRow = sheet.getRow(endRow + 1);
     totalRow.height = 24;
     textCell(totalRow.getCell(1), 'TỔNG CỘNG', 'center');
-    formulaCell(totalRow.getCell(2), `SUM(B${startRow}:B${endRow})`, '#,##0', true);
+    formulaCell(
+      totalRow.getCell(2),
+      `SUM(B${startRow}:B${endRow})`,
+      '#,##0',
+      true,
+    );
     textCell(totalRow.getCell(3), '100.0%', 'right');
 
     for (let c = 1; c <= columns.length; c++) {
@@ -249,9 +289,24 @@ export class ReportSheetRegistry {
       { header: 'STT', key: 'idx', width: 10, align: 'center' as const },
       { header: 'Mã SKU', key: 'sku', width: 18, align: 'center' as const },
       { header: 'Tên sản phẩm', key: 'name', width: 36 },
-      { header: 'Biến thể', key: 'variant', width: 20, align: 'center' as const },
-      { header: 'Số lượng đã bán', key: 'sold', width: 20, align: 'right' as const },
-      { header: 'Doanh thu mang lại', key: 'rev', width: 24, align: 'right' as const },
+      {
+        header: 'Biến thể',
+        key: 'variant',
+        width: 20,
+        align: 'center' as const,
+      },
+      {
+        header: 'Số lượng đã bán',
+        key: 'sold',
+        width: 20,
+        align: 'right' as const,
+      },
+      {
+        header: 'Doanh thu mang lại',
+        key: 'rev',
+        width: 24,
+        align: 'right' as const,
+      },
     ];
 
     applyStandardSheetLayout(sheet, {
@@ -287,8 +342,18 @@ export class ReportSheetRegistry {
     totalRow.height = 24;
     totalRow.getCell(1).value = '';
     textCell(totalRow.getCell(3), 'TỔNG CỘNG', 'center');
-    formulaCell(totalRow.getCell(5), `SUM(E${startRow}:E${endRow})`, '#,##0', true);
-    formulaCell(totalRow.getCell(6), `SUM(F${startRow}:F${endRow})`, '#,##0" ₫"', true);
+    formulaCell(
+      totalRow.getCell(5),
+      `SUM(E${startRow}:E${endRow})`,
+      '#,##0',
+      true,
+    );
+    formulaCell(
+      totalRow.getCell(6),
+      `SUM(F${startRow}:F${endRow})`,
+      '#,##0" ₫"',
+      true,
+    );
 
     for (let c = 1; c <= columns.length; c++) {
       const cell = totalRow.getCell(c);
@@ -311,10 +376,30 @@ export class ReportSheetRegistry {
       { header: 'Tên sản phẩm', key: 'name', width: 36 },
       { header: 'Màu sắc', key: 'color', width: 14, align: 'center' as const },
       { header: 'Kích cỡ', key: 'size', width: 14, align: 'center' as const },
-      { header: 'Tồn thực tế', key: 'onHand', width: 16, align: 'right' as const },
-      { header: 'Tồn đang giữ', key: 'res', width: 16, align: 'right' as const },
-      { header: 'Tồn khả dụng', key: 'avail', width: 16, align: 'right' as const },
-      { header: 'Trạng thái', key: 'status', width: 18, align: 'center' as const },
+      {
+        header: 'Tồn thực tế',
+        key: 'onHand',
+        width: 16,
+        align: 'right' as const,
+      },
+      {
+        header: 'Tồn đang giữ',
+        key: 'res',
+        width: 16,
+        align: 'right' as const,
+      },
+      {
+        header: 'Tồn khả dụng',
+        key: 'avail',
+        width: 16,
+        align: 'right' as const,
+      },
+      {
+        header: 'Trạng thái',
+        key: 'status',
+        width: 18,
+        align: 'center' as const,
+      },
     ];
 
     applyStandardSheetLayout(sheet, {
@@ -323,7 +408,12 @@ export class ReportSheetRegistry {
     });
 
     if (!data.items || data.items.length === 0) {
-      addEmptyStateRow(sheet, 5, columns.length, 'Tất cả sản phẩm đều ở mức tồn an toàn');
+      addEmptyStateRow(
+        sheet,
+        5,
+        columns.length,
+        'Tất cả sản phẩm đều ở mức tồn an toàn',
+      );
       autoFitColumns(sheet);
       return;
     }
@@ -366,10 +456,25 @@ export class ReportSheetRegistry {
     dateRangeText?: string,
   ): void {
     const columns = [
-      { header: 'Mã khuyến mãi', key: 'code', width: 22, align: 'center' as const },
+      {
+        header: 'Mã khuyến mãi',
+        key: 'code',
+        width: 22,
+        align: 'center' as const,
+      },
       { header: 'Tên chương trình', key: 'name', width: 32 },
-      { header: 'Số lượt sử dụng', key: 'usage', width: 18, align: 'right' as const },
-      { header: 'Tổng tiền đã giảm', key: 'discount', width: 24, align: 'right' as const },
+      {
+        header: 'Số lượt sử dụng',
+        key: 'usage',
+        width: 18,
+        align: 'right' as const,
+      },
+      {
+        header: 'Tổng tiền đã giảm',
+        key: 'discount',
+        width: 24,
+        align: 'right' as const,
+      },
     ];
 
     applyStandardSheetLayout(sheet, {
@@ -402,8 +507,18 @@ export class ReportSheetRegistry {
     const totalRow = sheet.getRow(endRow + 1);
     totalRow.height = 24;
     textCell(totalRow.getCell(1), 'TỔNG CỘNG', 'center');
-    formulaCell(totalRow.getCell(3), `SUM(C${startRow}:C${endRow})`, '#,##0', true);
-    formulaCell(totalRow.getCell(4), `SUM(D${startRow}:D${endRow})`, '#,##0" ₫"', true);
+    formulaCell(
+      totalRow.getCell(3),
+      `SUM(C${startRow}:C${endRow})`,
+      '#,##0',
+      true,
+    );
+    formulaCell(
+      totalRow.getCell(4),
+      `SUM(D${startRow}:D${endRow})`,
+      '#,##0" ₫"',
+      true,
+    );
 
     for (let c = 1; c <= columns.length; c++) {
       const cell = totalRow.getCell(c);
@@ -422,9 +537,24 @@ export class ReportSheetRegistry {
     data: ReviewsReportResponseDto,
   ): void {
     const columns = [
-      { header: 'Số sao đánh giá', key: 'stars', width: 22, align: 'center' as const },
-      { header: 'Số lượng đánh giá', key: 'count', width: 22, align: 'right' as const },
-      { header: 'Tỷ lệ phân bổ (%)', key: 'pct', width: 22, align: 'right' as const },
+      {
+        header: 'Số sao đánh giá',
+        key: 'stars',
+        width: 22,
+        align: 'center' as const,
+      },
+      {
+        header: 'Số lượng đánh giá',
+        key: 'count',
+        width: 22,
+        align: 'right' as const,
+      },
+      {
+        header: 'Tỷ lệ phân bổ (%)',
+        key: 'pct',
+        width: 22,
+        align: 'right' as const,
+      },
     ];
 
     applyStandardSheetLayout(sheet, {
@@ -437,7 +567,8 @@ export class ReportSheetRegistry {
 
     const startRow = 5;
     stars.forEach((star, idx) => {
-      const count = (data.ratingDistribution && data.ratingDistribution[star]) || 0;
+      const count =
+        (data.ratingDistribution && data.ratingDistribution[star]) || 0;
       const pct = totalReviews > 0 ? (count / totalReviews) * 100 : 0;
 
       const row = sheet.getRow(startRow + idx);
@@ -455,7 +586,12 @@ export class ReportSheetRegistry {
     const totalRow = sheet.getRow(endRow + 1);
     totalRow.height = 24;
     textCell(totalRow.getCell(1), 'TỔNG CỘNG', 'center');
-    formulaCell(totalRow.getCell(2), `SUM(B${startRow}:B${endRow})`, '#,##0', true);
+    formulaCell(
+      totalRow.getCell(2),
+      `SUM(B${startRow}:B${endRow})`,
+      '#,##0',
+      true,
+    );
     textCell(totalRow.getCell(3), '100.0%', 'right');
 
     for (let c = 1; c <= columns.length; c++) {
@@ -477,9 +613,24 @@ export class ReportSheetRegistry {
   ): void {
     const columns = [
       { header: 'Phương thức thanh toán', key: 'method', width: 28 },
-      { header: 'Số đơn thanh toán', key: 'orders', width: 20, align: 'right' as const },
-      { header: 'Tổng tiền thanh toán', key: 'amount', width: 26, align: 'right' as const },
-      { header: 'Tỷ lệ doanh thu (%)', key: 'pct', width: 22, align: 'right' as const },
+      {
+        header: 'Số đơn thanh toán',
+        key: 'orders',
+        width: 20,
+        align: 'right' as const,
+      },
+      {
+        header: 'Tổng tiền thanh toán',
+        key: 'amount',
+        width: 26,
+        align: 'right' as const,
+      },
+      {
+        header: 'Tỷ lệ doanh thu (%)',
+        key: 'pct',
+        width: 22,
+        align: 'right' as const,
+      },
     ];
 
     applyStandardSheetLayout(sheet, {
@@ -522,8 +673,18 @@ export class ReportSheetRegistry {
     const totalRow = sheet.getRow(endRow + 1);
     totalRow.height = 24;
     textCell(totalRow.getCell(1), 'TỔNG CỘNG', 'center');
-    formulaCell(totalRow.getCell(2), `SUM(B${startRow}:B${endRow})`, '#,##0', true);
-    formulaCell(totalRow.getCell(3), `SUM(C${startRow}:C${endRow})`, '#,##0" ₫"', true);
+    formulaCell(
+      totalRow.getCell(2),
+      `SUM(B${startRow}:B${endRow})`,
+      '#,##0',
+      true,
+    );
+    formulaCell(
+      totalRow.getCell(3),
+      `SUM(C${startRow}:C${endRow})`,
+      '#,##0" ₫"',
+      true,
+    );
     textCell(totalRow.getCell(4), '100.0%', 'right');
 
     for (let c = 1; c <= columns.length; c++) {
@@ -546,7 +707,12 @@ export class ReportSheetRegistry {
     const columns = [
       { header: 'Chỉ tiêu tài chính & Thuế', key: 'metric', width: 42 },
       { header: 'Giá trị', key: 'val', width: 24, align: 'right' as const },
-      { header: 'Đơn vị tính', key: 'unit', width: 18, align: 'center' as const },
+      {
+        header: 'Đơn vị tính',
+        key: 'unit',
+        width: 18,
+        align: 'center' as const,
+      },
       { header: 'Căn cứ pháp lý / Ghi chú', key: 'note', width: 36 },
     ];
 
