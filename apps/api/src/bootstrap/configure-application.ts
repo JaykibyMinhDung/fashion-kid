@@ -1,16 +1,11 @@
-import {
-  HttpStatus,
-  INestApplication,
-  RequestMethod,
-  ValidationPipe,
-} from '@nestjs/common';
+import { HttpStatus, RequestMethod, ValidationPipe } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 import type { CorsOptions } from '@nestjs/common/interfaces/external/cors-options.interface';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import type { ValidationError } from 'class-validator';
 import cookieParserPackage from 'cookie-parser';
 import type { RequestHandler } from 'express';
-import { json, urlencoded } from 'express';
 import { ApiException, type ApiErrorDetail } from '../common/errors/api-error';
 import { ApiExceptionFilter } from '../common/errors/api-exception.filter';
 import { requestIdMiddleware } from '../common/http/request-id';
@@ -59,7 +54,7 @@ function securityHeaders(isProduction: boolean): RequestHandler {
   };
 }
 
-export function configureApplication(app: INestApplication): void {
+export function configureApplication(app: NestExpressApplication): void {
   const configService = app.get(ConfigService);
   const webOrigin = configService.getOrThrow<string>('WEB_ORIGIN');
   const isProduction = configService.get<string>('NODE_ENV') === 'production';
@@ -75,9 +70,11 @@ export function configureApplication(app: INestApplication): void {
   app.use(securityHeaders(isProduction));
   app.use(createCookieParser());
   // SEC-WEB-07 (Day 21): giới hạn kích thước body tường minh (chống oversized-body/DoS).
+  // Dùng body-parser tích hợp của @nestjs/platform-express (không import trực tiếp 'express',
+  // vì 'express' chỉ là dependency gián tiếp -> pnpm không resolve được lúc runtime).
   const bodyLimit = '256kb';
-  app.use(json({ limit: bodyLimit }));
-  app.use(urlencoded({ extended: true, limit: bodyLimit }));
+  app.useBodyParser('json', { limit: bodyLimit });
+  app.useBodyParser('urlencoded', { extended: true, limit: bodyLimit });
   const corsOptions: CorsOptions = {
     origin: (origin, callback) => {
       callback(null, !origin || origin === webOrigin);

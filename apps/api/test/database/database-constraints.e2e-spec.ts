@@ -24,15 +24,35 @@ describe('Database constraints (e2e)', () => {
     await prisma.$disconnect();
   });
 
+  // Đếm theo business key của seed (không đếm toàn bảng): các suite test:db dùng
+  // chung 1 DB và có suite (vd checkout-concurrency) tạo thêm dữ liệu riêng.
+  const SEED_EMAILS = [
+    'customer@mam-nho.local',
+    'disabled-customer@mam-nho.local',
+    'sales@mam-nho.local',
+    'warehouse@mam-nho.local',
+    'admin@mam-nho.local',
+  ];
+  const SEED_PRODUCT_SLUGS = [
+    'set-ao-khoac-coral',
+    'set-so-mi-sage',
+    'romper-muslin-apricot',
+  ];
+  const SEED_SKUS = ['MAM-CORAL-90', 'MAM-SAGE-100', 'MAM-APRICOT-70'];
+
   it('keeps the idempotent seed business-key counts stable', async () => {
     const [roles, users, products, variants, inventories, ledgerEntries] =
       await Promise.all([
         prisma.role.count(),
-        prisma.user.count(),
-        prisma.product.count(),
-        prisma.productVariant.count(),
-        prisma.inventory.count(),
-        prisma.inventoryTransaction.count(),
+        prisma.user.count({ where: { email: { in: SEED_EMAILS } } }),
+        prisma.product.count({ where: { slug: { in: SEED_PRODUCT_SLUGS } } }),
+        prisma.productVariant.count({ where: { sku: { in: SEED_SKUS } } }),
+        prisma.inventory.count({
+          where: { variant: { sku: { in: SEED_SKUS } } },
+        }),
+        prisma.inventoryTransaction.count({
+          where: { referenceType: 'SEED' },
+        }),
       ]);
 
     expect({
@@ -59,6 +79,7 @@ describe('Database constraints (e2e)', () => {
     }
 
     const users = await prisma.user.findMany({
+      where: { email: { in: SEED_EMAILS } },
       select: { passwordHash: true },
     });
     const verificationResults = await Promise.all(

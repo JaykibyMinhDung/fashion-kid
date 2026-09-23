@@ -402,34 +402,36 @@ describe('Reporting Module (e2e) - Gate M7', () => {
 
   describe('RBAC Access Control', () => {
     it('should reject unauthenticated requests with 401', async () => {
-      const response = await request(server).get('/api/v1/reporting/summary');
+      const response = await request(server).get(
+        '/api/v1/admin/reports/summary',
+      );
       expect(response.status).toBe(401);
     });
 
     it('should reject CUSTOMER role with 403', async () => {
       const response = await request(server)
-        .get('/api/v1/reporting/summary')
+        .get('/api/v1/admin/reports/summary')
         .set('Authorization', `Bearer ${customerToken}`);
       expect(response.status).toBe(403);
     });
 
     it('should reject SALES_STAFF role with 403', async () => {
       const response = await request(server)
-        .get('/api/v1/reporting/summary')
+        .get('/api/v1/admin/reports/summary')
         .set('Authorization', `Bearer ${salesToken}`);
       expect(response.status).toBe(403);
     });
 
     it('should reject WAREHOUSE_STAFF role with 403', async () => {
       const response = await request(server)
-        .get('/api/v1/reporting/summary')
+        .get('/api/v1/admin/reports/summary')
         .set('Authorization', `Bearer ${warehouseToken}`);
       expect(response.status).toBe(403);
     });
 
     it('should allow ADMIN role with 200', async () => {
       const response = await request(server)
-        .get('/api/v1/reporting/summary?from=2026-09-11&to=2026-09-13')
+        .get('/api/v1/admin/reports/summary?from=2026-09-11&to=2026-09-13')
         .set('Authorization', `Bearer ${adminToken}`);
       expect(response.status).toBe(200);
     });
@@ -438,7 +440,7 @@ describe('Reporting Module (e2e) - Gate M7', () => {
   describe('Gate M7: Deterministic KPI Fixture', () => {
     it('should compute exact KPI: grossRevenue=800000, completedOrders=2, AOV=400000, unitsSold=5', async () => {
       const response = await request(server)
-        .get('/api/v1/reporting/summary?from=2026-09-11&to=2026-09-13')
+        .get('/api/v1/admin/reports/summary?from=2026-09-11&to=2026-09-13')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
@@ -454,7 +456,7 @@ describe('Reporting Module (e2e) - Gate M7', () => {
     it('should exclude CANCELLED and SHIPPING orders from revenue series', async () => {
       const response = await request(server)
         .get(
-          '/api/v1/reporting/revenue?from=2026-09-11&to=2026-09-13&granularity=day',
+          '/api/v1/admin/reports/revenue?from=2026-09-11&to=2026-09-13&granularity=day',
         )
         .set('Authorization', `Bearer ${adminToken}`);
 
@@ -485,7 +487,7 @@ describe('Reporting Module (e2e) - Gate M7', () => {
     it('should correctly allocate 16:59:59Z to local date and 17:00:00Z to next local date', async () => {
       const response = await request(server)
         .get(
-          '/api/v1/reporting/revenue?from=2026-09-20&to=2026-09-22&granularity=day',
+          '/api/v1/admin/reports/revenue?from=2026-09-20&to=2026-09-22&granularity=day',
         )
         .set('Authorization', `Bearer ${adminToken}`);
 
@@ -512,7 +514,7 @@ describe('Reporting Module (e2e) - Gate M7', () => {
   describe('No-Data Graceful Handling', () => {
     it('should return zeros for date ranges with no completed orders', async () => {
       const response = await request(server)
-        .get('/api/v1/reporting/summary?from=2025-01-01&to=2025-01-05')
+        .get('/api/v1/admin/reports/summary?from=2025-01-01&to=2025-01-05')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
@@ -528,7 +530,7 @@ describe('Reporting Module (e2e) - Gate M7', () => {
   describe('Security & PII Leaks', () => {
     it('should not contain any PII fields in summary or series response', async () => {
       const response = await request(server)
-        .get('/api/v1/reporting/summary?from=2026-09-11&to=2026-09-13')
+        .get('/api/v1/admin/reports/summary?from=2026-09-11&to=2026-09-13')
         .set('Authorization', `Bearer ${adminToken}`);
 
       const bodyText = JSON.stringify(response.body);
@@ -540,9 +542,9 @@ describe('Reporting Module (e2e) - Gate M7', () => {
   });
 
   describe('Additional Reporting Endpoints', () => {
-    it('GET /api/v1/reporting/orders should return status breakdown', async () => {
+    it('GET /api/v1/admin/reports/orders should return status breakdown', async () => {
       const response = await request(server)
-        .get('/api/v1/reporting/orders?from=2026-09-11&to=2026-09-13')
+        .get('/api/v1/admin/reports/orders?from=2026-09-11&to=2026-09-13')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
@@ -552,9 +554,9 @@ describe('Reporting Module (e2e) - Gate M7', () => {
       expect(data.periodCompletedOrders).toBeGreaterThanOrEqual(2);
     });
 
-    it('GET /api/v1/reporting/products should return top products', async () => {
+    it('GET /api/v1/admin/reports/products should return top products', async () => {
       const response = await request(server)
-        .get('/api/v1/reporting/products?from=2026-09-11&to=2026-09-13')
+        .get('/api/v1/admin/reports/products?from=2026-09-11&to=2026-09-13')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);
@@ -564,9 +566,9 @@ describe('Reporting Module (e2e) - Gate M7', () => {
       expect(data.totalUnitsRanked).toBe(5);
     });
 
-    it('GET /api/v1/reporting/inventory should return stock alerts', async () => {
+    it('GET /api/v1/admin/reports/inventory should return stock alerts', async () => {
       const response = await request(server)
-        .get('/api/v1/reporting/inventory?threshold=5')
+        .get('/api/v1/admin/reports/inventory?threshold=5')
         .set('Authorization', `Bearer ${adminToken}`);
 
       expect(response.status).toBe(200);

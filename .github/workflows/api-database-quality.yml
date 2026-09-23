@@ -49,6 +49,14 @@ jobs:
       COOKIE_SECURE: false
       SHIPPING_FALLBACK_FEE: 30000
       SHIPPING_QUOTE_TTL_SECONDS: 300
+      # VNPay: giá trị giả lập cho test (không phải credential thật), khớp payment.e2e-spec
+      VNPAY_ENABLED: 'true'
+      VNPAY_TMN_CODE: CITEST01
+      VNPAY_HASH_SECRET: TEST_VNPAY_HASH_SECRET_KEY
+      VNPAY_PAYMENT_URL: https://sandbox.vnpayment.vn/paymentv2/vpcpay.html
+      VNPAY_RETURN_URL: http://localhost:3000/checkout/payment-return
+      VNPAY_IPN_URL: http://localhost:8080/api/v1/webhooks/payments/vnpay/ipn
+      VNPAY_TEST_MODE: 'true'
 
     steps:
       - name: Checkout source

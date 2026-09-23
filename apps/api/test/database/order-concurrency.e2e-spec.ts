@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { randomUUID } from 'node:crypto';
 import { HttpException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import {
   EntityStatus,
@@ -18,6 +19,12 @@ import { PrismaService } from '../../src/database/prisma/prisma.service';
 import { PrismaInventoryRepository } from '../../src/modules/inventory/repositories/prisma-inventory.repository';
 import { PrismaOrderRepository } from '../../src/modules/orders/repositories/prisma-order.repository';
 import { OrderTransitionService } from '../../src/modules/orders/services/order-transition.service';
+import { PrismaInvoiceRepository } from '../../src/modules/billing/repositories/prisma-invoice.repository';
+import { InvoiceNumberService } from '../../src/modules/billing/services/invoice-number.service';
+import { InvoiceService } from '../../src/modules/billing/services/invoice.service';
+import { TaxConfigService } from '../../src/modules/billing/services/tax-config.service';
+import { PrismaOutboxRepository } from '../../src/modules/notification/repositories/prisma-outbox.repository';
+import { OutboxService } from '../../src/modules/notification/services/outbox.service';
 
 describe('Order Lifecycle Concurrency & Race Conditions (database)', () => {
   const connectionString = process.env.DATABASE_URL;
@@ -32,10 +39,23 @@ describe('Order Lifecycle Concurrency & Race Conditions (database)', () => {
 
   const orderRepository = new PrismaOrderRepository(prismaService);
   const inventoryRepository = new PrismaInventoryRepository();
+  // Day 29-30: huỷ đơn sẽ void hoá đơn; chuyển trạng thái có thể xếp email vào outbox
+  const configService = new ConfigService(process.env);
+  const invoiceService = new InvoiceService(
+    new PrismaInvoiceRepository(prismaService),
+    new InvoiceNumberService(),
+    new TaxConfigService(configService),
+  );
+  const outboxService = new OutboxService(
+    new PrismaOutboxRepository(prismaService),
+  );
   const transitionService = new OrderTransitionService(
     prismaService,
     orderRepository,
     inventoryRepository,
+    invoiceService,
+    outboxService,
+    configService,
   );
 
   let warehouseId: string;

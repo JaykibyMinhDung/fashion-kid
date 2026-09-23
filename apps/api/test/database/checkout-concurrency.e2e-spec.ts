@@ -27,6 +27,12 @@ import { PrismaAddressRepository } from '../../src/modules/users/repositories/pr
 import { AddressService } from '../../src/modules/users/address.service';
 import { OrderCounterService } from '../../src/modules/checkout/services/order-counter.service';
 import { CheckoutService } from '../../src/modules/checkout/services/checkout.service';
+import { PrismaInvoiceRepository } from '../../src/modules/billing/repositories/prisma-invoice.repository';
+import { InvoiceNumberService } from '../../src/modules/billing/services/invoice-number.service';
+import { InvoiceService } from '../../src/modules/billing/services/invoice.service';
+import { TaxConfigService } from '../../src/modules/billing/services/tax-config.service';
+import { PrismaOutboxRepository } from '../../src/modules/notification/repositories/prisma-outbox.repository';
+import { OutboxService } from '../../src/modules/notification/services/outbox.service';
 import { ConfigService } from '@nestjs/config';
 
 describe('Checkout COD concurrency & invariants (database)', () => {
@@ -59,11 +65,25 @@ describe('Checkout COD concurrency & invariants (database)', () => {
   const inventoryRepo = new PrismaInventoryRepository();
   const orderCounterService = new OrderCounterService();
 
+  // Day 29-30: checkout phát hành hoá đơn VAT + xếp email vào outbox trong cùng transaction
+  const taxConfigService = new TaxConfigService(configService);
+  const invoiceService = new InvoiceService(
+    new PrismaInvoiceRepository(prismaService),
+    new InvoiceNumberService(),
+    taxConfigService,
+  );
+  const outboxService = new OutboxService(
+    new PrismaOutboxRepository(prismaService),
+  );
   const checkoutService = new CheckoutService(
     prismaService,
     orderCounterService,
     shippingService,
     inventoryRepo,
+    invoiceService,
+    taxConfigService,
+    outboxService,
+    configService,
   );
 
   let customerRoleId: string;
