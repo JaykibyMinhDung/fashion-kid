@@ -27,6 +27,7 @@ import { PaymentModule } from './modules/payment/payment.module';
 import { BillingModule } from './modules/billing/billing.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
+import { ContactModule } from './modules/contact/contact.module';
 
 @Module({
   imports: [
@@ -53,6 +54,7 @@ import { WishlistModule } from './modules/wishlist/wishlist.module';
     BillingModule,
     NotificationModule,
     WishlistModule,
+    ContactModule,
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 1_000 }]),
   ],
   controllers: [AppController],

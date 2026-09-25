@@ -6,7 +6,9 @@ export type MailTemplate =
   | 'order-packing'
   | 'order-shipping'
   | 'order-delivered'
-  | 'order-cancelled';
+  | 'order-cancelled'
+  | 'contact-message'
+  | 'contact-received';
 
 export interface OutboxCommand {
   dedupeKey: string;
