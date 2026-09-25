@@ -12,6 +12,12 @@ import {
 } from "react";
 import type { BlobResponse } from "@/lib/api/api-client";
 import {
+  notifyError,
+  notifySuccess,
+  resolveMutationToast,
+  withToast,
+} from "@/lib/toast/mutation-toast";
+import {
   type AuthClient,
   createAuthClient,
 } from "../api/auth-client";
@@ -70,7 +76,10 @@ export function AuthProvider({
 
   const login = useCallback(
     async (input: LoginInput) => {
-      const authenticatedUser = await client.login(input);
+      const authenticatedUser = await withToast(client.login(input), {
+        success: "Đăng nhập thành công",
+        error: "Đăng nhập không thành công. Vui lòng thử lại.",
+      });
       setUser(authenticatedUser);
       setStatus("authenticated");
       return authenticatedUser;
@@ -80,7 +89,10 @@ export function AuthProvider({
 
   const register = useCallback(
     async (input: RegisterInput) => {
-      const authenticatedUser = await client.register(input);
+      const authenticatedUser = await withToast(client.register(input), {
+        success: "Tạo tài khoản thành công",
+        error: "Không thể tạo tài khoản. Vui lòng thử lại.",
+      });
       setUser(authenticatedUser);
       setStatus("authenticated");
       return authenticatedUser;
@@ -92,14 +104,19 @@ export function AuthProvider({
     try {
       await client.logout();
     } finally {
+      // Phiên cục bộ luôn bị xoá, nên luôn báo đã đăng xuất
       setUser(null);
       setStatus("anonymous");
+      notifySuccess("Đã đăng xuất");
     }
   }, [client]);
 
   const changePassword = useCallback(
     async (input: ChangePasswordInput) => {
-      await client.changePassword(input);
+      await withToast(client.changePassword(input), {
+        success: "Đã đổi mật khẩu. Vui lòng đăng nhập lại.",
+        error: "Không thể đổi mật khẩu. Vui lòng thử lại.",
+      });
       setUser(null);
       setStatus("anonymous");
     },
@@ -108,8 +125,19 @@ export function AuthProvider({
 
   const authorizedRequest = useCallback(
     async <T,>(path: `/${string}`, init?: RequestInit): Promise<T> => {
+      // Toast thành công/thất bại cho mọi thao tác ghi (POST/PUT/PATCH/DELETE)
+      const toastPlan = resolveMutationToast(init?.method, path);
       try {
-        return await client.authorizedRequest<T>(path, init);
+        const result = await client.authorizedRequest<T>(path, init);
+        if (toastPlan?.success) {
+          notifySuccess(toastPlan.success);
+        }
+        return result;
+      } catch (error) {
+        if (toastPlan) {
+          notifyError(toastPlan.errorMessage(error));
+        }
+        throw error;
       } finally {
         const refreshedUser = client.getCurrentUser();
         setUser(refreshedUser);

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/features/auth/session/auth-provider";
 
 // Merriweather (Google Fonts, giấy phép SIL OFL — xem fonts/OFL.txt), tự host trong repo
@@ -43,6 +44,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="min-h-full bg-background text-foreground" suppressHydrationWarning>
         <AuthProvider>{children}</AuthProvider>
+        <Toaster />
       </body>
     </html>
   );

@@ -105,9 +105,8 @@ export function ProductPurchasePanel({
         <div className="flex h-13 items-center rounded-full border border-border bg-surface px-2">
           <Button
             type="button"
-            size="sm"
+            size="icon"
             variant="ghost"
-            className="size-9 px-0"
             disabled={pending || quantity <= 1}
             onClick={() => setQuantity((value) => Math.max(1, value - 1))}
             aria-label="Giảm số lượng"
@@ -122,9 +121,8 @@ export function ProductPurchasePanel({
           </span>
           <Button
             type="button"
-            size="sm"
+            size="icon"
             variant="ghost"
-            className="size-9 px-0"
             disabled={pending || quantity >= 99}
             onClick={() => setQuantity((value) => Math.min(99, value + 1))}
             aria-label="Tăng số lượng"

@@ -103,9 +103,8 @@ function CartItemRow({
             <div className="flex h-9 items-center rounded-full border border-border bg-surface px-1">
               <Button
                 type="button"
-                size="sm"
+                size="icon-sm"
                 variant="ghost"
-                className="size-8 px-0"
                 disabled={pending || item.quantity <= 1}
                 onClick={() => onUpdate(item, item.quantity - 1)}
                 aria-label={`Giảm ${item.product.name}`}
@@ -120,9 +119,8 @@ function CartItemRow({
               </span>
               <Button
                 type="button"
-                size="sm"
+                size="icon-sm"
                 variant="ghost"
-                className="size-8 px-0"
                 disabled={pending}
                 onClick={() => onUpdate(item, item.quantity + 1)}
                 aria-label={`Tăng ${item.product.name}`}

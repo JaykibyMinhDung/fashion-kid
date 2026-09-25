@@ -1,5 +1,6 @@
 "use client";
 
+import { withToast } from "@/lib/toast/mutation-toast";
 import { ArrowRight, CheckCircle2, LoaderCircle, Send, XCircle } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -40,7 +41,9 @@ export function VerifyEmailView({
 
     const verifyPromise = onVerifyEmail
       ? onVerifyEmail({ token })
-      : apiVerifyEmail({ token });
+      : withToast(apiVerifyEmail({ token }), {
+          success: "Xác thực email thành công",
+        });
 
     verifyPromise
       .then(() => {
@@ -76,7 +79,9 @@ export function VerifyEmailView({
       if (onResendVerification) {
         await onResendVerification({ email: values.email });
       } else {
-        await apiResendVerification({ email: values.email });
+        await withToast(apiResendVerification({ email: values.email }), {
+          success: "Đã gửi lại email xác thực",
+        });
       }
       setResendSuccess(values.email);
     } catch (caught) {
