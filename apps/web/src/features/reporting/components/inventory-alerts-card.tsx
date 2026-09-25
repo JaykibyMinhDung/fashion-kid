@@ -24,7 +24,7 @@ export function InventoryAlertsCard({
 
   return (
     <Card>
-      <CardContent>
+      <CardContent className="flex h-full flex-col">
         <div className="flex items-center justify-between border-b border-border/50 pb-4">
           <div>
             <h3 className="text-base font-bold">Cảnh báo tồn kho</h3>
@@ -42,7 +42,7 @@ export function InventoryAlertsCard({
         </div>
 
         {items.length === 0 ? (
-          <div className="flex h-40 flex-col items-center justify-center gap-2 text-center text-sm text-muted">
+          <div className="flex min-h-40 flex-1 flex-col items-center justify-center gap-2 text-center text-sm text-muted">
             <span className="grid size-10 place-items-center rounded-full bg-emerald-50 text-emerald-600">
               ✓
             </span>

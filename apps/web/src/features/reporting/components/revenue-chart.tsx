@@ -150,8 +150,8 @@ export function RevenueChart({
 
   const options: ChartOptions<"line"> = {
     responsive: true,
-    maintainAspectRatio: true,
-    aspectRatio: 2.5,
+    // Chiều cao do khung h-64 quyết định (không phình theo bề ngang màn hình)
+    maintainAspectRatio: false,
     interaction: {
       mode: "index" as const,
       intersect: false,
@@ -235,7 +235,9 @@ export function RevenueChart({
           tất: {data.totalOrders} đơn
         </p>
 
-        <Line ref={chartRef} data={chartData} options={options} />
+        <div className="relative h-64">
+          <Line ref={chartRef} data={chartData} options={options} />
+        </div>
       </CardContent>
     </Card>
   );
