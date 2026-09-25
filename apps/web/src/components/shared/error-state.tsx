@@ -21,10 +21,10 @@ export function ErrorState({
       <p className="max-w-sm text-xs text-rose-700">{message}</p>
       {onRetry && (
         <Button
-          variant="outline"
+          variant="danger-outline"
           size="sm"
           onClick={onRetry}
-          className="mt-2 border-rose-300 text-rose-700 hover:bg-rose-100"
+          className="mt-2"
         >
           Thử lại
         </Button>

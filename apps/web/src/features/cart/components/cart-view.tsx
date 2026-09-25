@@ -131,8 +131,7 @@ function CartItemRow({
             <Button
               type="button"
               size="sm"
-              variant="ghost"
-              className="text-muted hover:text-red-700"
+              variant="subtle-danger"
               disabled={pending}
               onClick={() => onRemove(item)}
               aria-label={`Xóa ${item.product.name}`}
