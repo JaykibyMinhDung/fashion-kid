@@ -129,7 +129,7 @@ describe("LoginForm", () => {
     fillAndSubmit();
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "Email hoặc mật khẩu không hợp lệ",
+      "Email hoặc mật khẩu không chính xác.",
     );
     expect(replace).not.toHaveBeenCalled();
   });

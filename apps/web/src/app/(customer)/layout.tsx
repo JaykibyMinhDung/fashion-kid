@@ -1,4 +1,4 @@
-import { KeyRound, MapPin, UserRound } from "lucide-react";
+import { KeyRound, MapPin, ReceiptText, Star, UserRound } from "lucide-react";
 import Link from "next/link";
 import type { ReactNode } from "react";
 
@@ -7,7 +7,13 @@ import { StoreHeader } from "@/components/layout/store-header";
 import { accountNavigation } from "@/config/navigation";
 import { RoleGate } from "@/features/auth/session/role-gate";
 
-const iconMap = { user: UserRound, map: MapPin, key: KeyRound };
+const iconMap = {
+  user: UserRound,
+  map: MapPin,
+  key: KeyRound,
+  star: Star,
+  receipt: ReceiptText,
+};
 
 export default function CustomerLayout({ children }: { children: ReactNode }) {
   return (

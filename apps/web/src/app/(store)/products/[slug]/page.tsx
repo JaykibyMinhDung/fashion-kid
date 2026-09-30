@@ -1,15 +1,16 @@
 import { Check } from "lucide-react";
 import type { Metadata } from "next";
-import Image from "next/image";
 import { notFound } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
+import { SafeImage } from "@/components/shared/safe-image";
 import {
   getProductBySlug,
   type CatalogProductDetail,
 } from "@/features/catalog/api/catalog-client";
 import { ApiClientError } from "@/lib/api/api-client";
 import { ProductPurchasePanel } from "@/features/cart/components/product-purchase-panel";
+import { ProductReviews } from "@/features/reviews/components/product-reviews";
 import { formatCurrency } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -56,7 +57,7 @@ export default async function ProductDetailPage({
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
         <div className="relative aspect-square overflow-hidden rounded-[2rem] bg-surface-soft">
-          <Image
+          <SafeImage
             src={image?.url ?? "/images/kids-fashion-hero.png"}
             alt={image?.altText ?? product.name}
             fill
@@ -97,6 +98,10 @@ export default async function ProductDetailPage({
             bán
           </p>
         </section>
+      </div>
+
+      <div className="mt-14 border-t border-border pt-10">
+        <ProductReviews productId={product.id} />
       </div>
     </div>
   );

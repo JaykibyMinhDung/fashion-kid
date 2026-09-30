@@ -1,7 +1,5 @@
 # Thư Mục Tài Liệu Tham Khảo (Reference Documents - Markdown)
 
-> ⚠️ **Đọc trước:** đây là bộ tài liệu thiết kế theo tiến trình Day 1–24. Khi mâu thuẫn, ưu tiên **Day 15 (Final) → Day chuyên sâu mới → freeze cũ**. Một số nội dung Day 1–14 đã bị **SUPERSEDED** (xem Day 15 Part 1 §35). Khi triển khai, đối chiếu code thật trong `apps/`.
-
 Thư mục này chứa toàn bộ 82 tài liệu đặc tả, thiết kế kiến trúc, mô hình dữ liệu, hợp đồng API, kiểm thử và hướng dẫn vận hành của dự án **Kids Fashion E-commerce**, được chuyển đổi 100% nguyên văn từ định dạng `.docx` sang `.md` và tập trung tại thư mục `/documents/reference/markdown/`.
 
 ---
@@ -165,5 +163,23 @@ Thư mục này chứa toàn bộ 82 tài liệu đặc tả, thiết kế kiế
 - [Day 24 - Part 2 - Defense Question Bank, Architecture Explanations & Technical Justification Guide - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 24 - Part 2 - Defense Question Bank, Architecture Explanations & Technical Justification Guide - Hệ thống thương mại điện tử quần áo trẻ em.md)
 - [Day 24 - Part 3 - Academic Evaluation Matrix, Defense Checklist, Scoring Evidence & Final Defense Freeze - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 24 - Part 3 - Academic Evaluation Matrix, Defense Checklist, Scoring Evidence & Final Defense Freeze - Hệ thống thương mại điện tử quần áo trẻ em.md)
 
+### Day 25
+
+- [Day 25 - Part 1 - Canonical API Endpoint Contract, Namespace Rules & Resource Mapping - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 25 - Part 1 - Canonical API Endpoint Contract, Namespace Rules & Resource Mapping - Hệ thống thương mại điện tử quần áo trẻ em.md)
+- [Day 25 - Part 2 - DTO Validation, Error Model, Serialization, Pagination & Swagger Documentation Rules - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 25 - Part 2 - DTO Validation, Error Model, Serialization, Pagination & Swagger Documentation Rules - Hệ thống thương mại điện tử quần áo trẻ em.md)
+- [Day 25 - Part 3 - API Contract Acceptance Matrix, Swagger Review Checklist & Final Contract Freeze - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 25 - Part 3 - API Contract Acceptance Matrix, Swagger Review Checklist & Final Contract Freeze - Hệ thống thương mại điện tử quần áo trẻ em.md)
+
+### Day 26
+
+- [Day 26 - Part 1 - Requirement Traceability Matrix, Coverage Model & Source Mapping - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 26 - Part 1 - Requirement Traceability Matrix, Coverage Model & Source Mapping - Hệ thống thương mại điện tử quần áo trẻ em.md)
+- [Day 26 - Part 2 - Critical Test Case Catalog, Concurrency Scenarios & Evidence Requirements - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 26 - Part 2 - Critical Test Case Catalog, Concurrency Scenarios & Evidence Requirements - Hệ thống thương mại điện tử quần áo trẻ em.md)
+- [Day 26 - Part 3 - Open Questions Sweep, Regression Gate, Test Execution Checklist & Traceability Freeze - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 26 - Part 3 - Open Questions Sweep, Regression Gate, Test Execution Checklist & Traceability Freeze - Hệ thống thương mại điện tử quần áo trẻ em.md)
+
+### Day 27
+
+- [Day 27 - Part 1 - Environment Configuration, Secrets, Migration, Seed & Deployment Order - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 27 - Part 1 - Environment Configuration, Secrets, Migration, Seed & Deployment Order - Hệ thống thương mại điện tử quần áo trẻ em.md)
+- [Day 27 - Part 2 - CI_CD, Staging, Backup Restore, Provider Fallback & Recovery Strategy - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 27 - Part 2 - CI_CD, Staging, Backup Restore, Provider Fallback & Recovery Strategy - Hệ thống thương mại điện tử quần áo trẻ em.md)
+- [Day 27 - Part 3 - Release Candidate Acceptance Gate, Smoke Test, Evidence Package & Release Freeze - Hệ thống thương mại điện tử quần áo trẻ em](./markdown/Day 27 - Part 3 - Release Candidate Acceptance Gate, Smoke Test, Evidence Package & Release Freeze - Hệ thống thương mại điện tử quần áo trẻ em.md)
+
 ---
-*Tổng số tài liệu: 82 files.*
+*Tổng số tài liệu: 91 files.*

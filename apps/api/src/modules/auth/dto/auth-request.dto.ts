@@ -88,3 +88,55 @@ export class ChangePasswordRequestDto {
   @MaxLength(128)
   newPassword!: string;
 }
+
+export class ForgotPasswordRequestDto {
+  @ApiProperty({ format: 'email', maxLength: 255 })
+  @Transform(canonicalEmail)
+  @IsEmail()
+  @MaxLength(255)
+  email!: string;
+}
+
+export class VerifyOtpRequestDto {
+  @ApiProperty({ format: 'email', maxLength: 255 })
+  @Transform(canonicalEmail)
+  @IsEmail()
+  @MaxLength(255)
+  email!: string;
+
+  @ApiProperty({ example: '123456', minLength: 6, maxLength: 6 })
+  @Transform(trimString)
+  @IsString()
+  @Length(6, 6)
+  @Matches(/^\d{6}$/, { message: 'Mã OTP phải gồm 6 chữ số' })
+  otp!: string;
+}
+
+export class ResetPasswordRequestDto {
+  @ApiProperty({
+    description: 'Link token hoặc reset token từ bước xác thực OTP',
+  })
+  @Transform(trimString)
+  @IsString()
+  token!: string;
+
+  @ApiProperty({ minLength: 15, maxLength: 128, writeOnly: true })
+  @IsString()
+  @MaxLength(128)
+  newPassword!: string;
+}
+
+export class VerifyEmailRequestDto {
+  @ApiProperty({ description: 'Token xác thực email' })
+  @Transform(trimString)
+  @IsString()
+  token!: string;
+}
+
+export class ResendVerificationRequestDto {
+  @ApiProperty({ format: 'email', maxLength: 255 })
+  @Transform(canonicalEmail)
+  @IsEmail()
+  @MaxLength(255)
+  email!: string;
+}

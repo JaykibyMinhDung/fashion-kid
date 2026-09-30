@@ -1,6 +1,7 @@
 import type { AuthContextValue } from "@/features/auth/session/auth-provider";
 import type {
   CheckoutOrderResponse,
+  CouponValidationResponse,
   CreateCheckoutOrderInput,
   ShippingQuote,
 } from "../contracts";
@@ -14,6 +15,16 @@ export function calculateShippingQuote(
   return request<ShippingQuote>("/api/v1/shipping/quote", {
     method: "POST",
     body: JSON.stringify({ addressId }),
+  });
+}
+
+export function validateCoupon(
+  request: AuthorizedRequest,
+  code: string,
+): Promise<CouponValidationResponse> {
+  return request<CouponValidationResponse>("/api/v1/coupons/validate", {
+    method: "POST",
+    body: JSON.stringify({ code }),
   });
 }
 

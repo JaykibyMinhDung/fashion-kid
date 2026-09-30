@@ -131,6 +131,50 @@ export function validateEnvironment(
     'SHIPPING_FALLBACK_FEE',
     '30000',
   );
+  const vatDefaultRateBps =
+    config.VAT_DEFAULT_RATE_BPS === undefined
+      ? 800
+      : parseInteger(config, 'VAT_DEFAULT_RATE_BPS', 0, 10_000);
+
+  const mailDriver = (config.MAIL_DRIVER as string) || 'smtp';
+  if (!['smtp', 'console'].includes(mailDriver)) {
+    throw new Error('MAIL_DRIVER must be either smtp or console');
+  }
+
+  const mailHost = (config.MAIL_HOST as string) || 'localhost';
+  const mailPort =
+    config.MAIL_PORT === undefined
+      ? 1025
+      : parseInteger(config, 'MAIL_PORT', 1, 65_535);
+  const mailSecure =
+    config.MAIL_SECURE === undefined
+      ? false
+      : parseBoolean(config, 'MAIL_SECURE');
+  const mailFrom =
+    (config.MAIL_FROM as string) || 'Mầm Nhỏ <no-reply@mamnho.local>';
+  const appPublicUrl =
+    (config.APP_PUBLIC_URL as string) || 'http://localhost:3000';
+  const mailWorkerIntervalSec =
+    config.MAIL_WORKER_INTERVAL_SEC === undefined
+      ? 15
+      : parseInteger(config, 'MAIL_WORKER_INTERVAL_SEC', 1, 3_600);
+  const mailWorkerBatch =
+    config.MAIL_WORKER_BATCH === undefined
+      ? 20
+      : parseInteger(config, 'MAIL_WORKER_BATCH', 1, 500);
+  const passwordResetOtpTtlMin =
+    config.PASSWORD_RESET_OTP_TTL_MIN === undefined
+      ? 10
+      : parseInteger(config, 'PASSWORD_RESET_OTP_TTL_MIN', 1, 1_440);
+  const passwordResetLinkTtlMin =
+    config.PASSWORD_RESET_LINK_TTL_MIN === undefined
+      ? 30
+      : parseInteger(config, 'PASSWORD_RESET_LINK_TTL_MIN', 1, 1_440);
+  const emailVerificationTtlHours =
+    config.EMAIL_VERIFICATION_TTL_HOURS === undefined
+      ? 24
+      : parseInteger(config, 'EMAIL_VERIFICATION_TTL_HOURS', 1, 168);
+
   if (rememberRefreshInactivityDays > rememberRefreshTokenTtlDays) {
     throw new Error(
       'REMEMBER_REFRESH_INACTIVITY_DAYS cannot exceed REMEMBER_REFRESH_TOKEN_TTL_DAYS',
@@ -140,6 +184,13 @@ export function validateEnvironment(
   const cookieSecure = parseBoolean(config, 'COOKIE_SECURE');
   if (nodeEnvironment === 'production' && !cookieSecure) {
     throw new Error('COOKIE_SECURE must be true in production');
+  }
+
+  if (config.VNPAY_ENABLED === 'true') {
+    requireString(config, 'VNPAY_TMN_CODE');
+    requireString(config, 'VNPAY_HASH_SECRET');
+    requireString(config, 'VNPAY_PAYMENT_URL');
+    requireString(config, 'VNPAY_RETURN_URL');
   }
 
   return {
@@ -152,6 +203,18 @@ export function validateEnvironment(
     MAX_CART_ITEM_QTY: maxCartItemQty,
     SHIPPING_QUOTE_TTL_SECONDS: shippingQuoteTtlSeconds,
     SHIPPING_FALLBACK_FEE: shippingFallbackFee,
+    VAT_DEFAULT_RATE_BPS: vatDefaultRateBps,
+    MAIL_DRIVER: mailDriver,
+    MAIL_HOST: mailHost,
+    MAIL_PORT: mailPort,
+    MAIL_SECURE: mailSecure,
+    MAIL_FROM: mailFrom,
+    APP_PUBLIC_URL: appPublicUrl,
+    MAIL_WORKER_INTERVAL_SEC: mailWorkerIntervalSec,
+    MAIL_WORKER_BATCH: mailWorkerBatch,
+    PASSWORD_RESET_OTP_TTL_MIN: passwordResetOtpTtlMin,
+    PASSWORD_RESET_LINK_TTL_MIN: passwordResetLinkTtlMin,
+    EMAIL_VERIFICATION_TTL_HOURS: emailVerificationTtlHours,
     COOKIE_SECURE: cookieSecure,
   };
 }

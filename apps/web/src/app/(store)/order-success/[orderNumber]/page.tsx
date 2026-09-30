@@ -1,13 +1,23 @@
-import { CheckCircle, Clock, ShoppingBag } from "lucide-react";
+"use client";
+
+import { Suspense } from "react";
+import { useSearchParams } from "next/navigation";
+import {
+  Banknote,
+  CheckCircle,
+  Clock,
+  CreditCard,
+  LoaderCircle,
+  ShoppingBag,
+  Truck,
+} from "lucide-react";
 import { ButtonLink } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 
-export default async function OrderSuccessPage({
-  params,
-}: {
-  params: Promise<{ orderNumber: string }>;
-}) {
-  const { orderNumber } = await params;
+function OrderSuccessContent({ orderNumber }: { orderNumber: string }) {
+  const searchParams = useSearchParams();
+  const paymentMethod = searchParams.get("payment") ?? "COD";
+  const isOnline = paymentMethod === "ONLINE";
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-12">
@@ -20,8 +30,9 @@ export default async function OrderSuccessPage({
           Cảm ơn bạn đã đặt hàng!
         </h1>
         <p className="text-sm text-muted max-w-md mx-auto">
-          Đơn hàng của bạn đã được tiếp nhận thành công và đang được chuẩn bị để
-          giao đến bé.
+          {isOnline
+            ? "Đơn hàng của bạn đã được tiếp nhận. Thanh toán đang được xử lý qua cổng VNPay."
+            : "Đơn hàng của bạn đã được tiếp nhận thành công và đang được chuẩn bị để giao đến bé."}
         </p>
 
         <div className="inline-flex items-center gap-2 rounded-full border border-border bg-surface px-5 py-2 shadow-xs">
@@ -45,12 +56,27 @@ export default async function OrderSuccessPage({
                 <span className="text-xs font-semibold text-muted">
                   Phương thức thanh toán
                 </span>
-                <p className="font-bold text-foreground">
-                  Thanh toán khi nhận hàng (COD)
-                </p>
-                <p className="text-xs text-muted">
-                  Vui lòng chuẩn bị tiền mặt khi nhận hàng
-                </p>
+                {isOnline ? (
+                  <>
+                    <p className="font-bold text-foreground flex items-center gap-1.5">
+                      <CreditCard className="h-4 w-4 text-brand" />
+                      Thanh toán trực tuyến (VNPay)
+                    </p>
+                    <p className="text-xs text-muted">
+                      Thanh toán qua thẻ ATM, Visa, MasterCard hoặc QR Pay
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <p className="font-bold text-foreground flex items-center gap-1.5">
+                      <Banknote className="h-4 w-4 text-brand" />
+                      Thanh toán khi nhận hàng (COD)
+                    </p>
+                    <p className="text-xs text-muted">
+                      Vui lòng chuẩn bị tiền mặt khi nhận hàng
+                    </p>
+                  </>
+                )}
               </div>
 
               <div className="rounded-2xl bg-surface-soft p-4 space-y-1">
@@ -105,11 +131,14 @@ export default async function OrderSuccessPage({
                     3
                   </div>
                   <div>
-                    <h4 className="text-xs font-bold text-foreground">
-                      Giao hàng COD
+                    <h4 className="text-xs font-bold text-foreground flex items-center gap-1">
+                      <Truck className="h-3.5 w-3.5" />
+                      Giao hàng
                     </h4>
                     <p className="text-[11px] text-muted mt-0.5">
-                      Nhận hàng và thanh toán tiền mặt
+                      {isOnline
+                        ? "Nhận hàng tại địa chỉ đã chọn"
+                        : "Nhận hàng và thanh toán tiền mặt"}
                     </p>
                   </div>
                 </div>
@@ -132,3 +161,34 @@ export default async function OrderSuccessPage({
     </div>
   );
 }
+
+export default function OrderSuccessPage({
+  params,
+}: {
+  params: Promise<{ orderNumber: string }>;
+}) {
+  // Unwrap params with use() or handle as Promise in Next.js 15+
+  // Since this is a client component, use React.use or useEffect
+  return (
+    <Suspense
+      fallback={
+        <div className="flex min-h-[50vh] items-center justify-center">
+          <LoaderCircle className="h-8 w-8 animate-spin text-brand" />
+        </div>
+      }
+    >
+      <OrderSuccessPageInner params={params} />
+    </Suspense>
+  );
+}
+
+function OrderSuccessPageInner({
+  params,
+}: {
+  params: Promise<{ orderNumber: string }>;
+}) {
+  const { orderNumber } = React.use(params);
+  return <OrderSuccessContent orderNumber={orderNumber} />;
+}
+
+import React from "react";

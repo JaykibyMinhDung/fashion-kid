@@ -15,6 +15,12 @@ function trimOptionalString({ value }: { value: unknown }): unknown {
   return trimmed.length === 0 ? null : trimmed;
 }
 
+function normalizeCouponCode({ value }: { value: unknown }): unknown {
+  if (typeof value !== 'string') return value;
+  const normalized = value.trim().toUpperCase();
+  return normalized.length === 0 ? null : normalized;
+}
+
 export class CreateOrderCheckoutRequestDto {
   @ApiProperty({
     format: 'uuid',
@@ -26,13 +32,15 @@ export class CreateOrderCheckoutRequestDto {
   addressId!: string;
 
   @ApiProperty({
-    enum: ['COD'],
+    enum: ['COD', 'ONLINE'],
     default: 'COD',
-    description: 'Phương thức thanh toán (giai đoạn P0 chỉ hỗ trợ COD)',
+    description: 'Phương thức thanh toán (COD hoặc ONLINE)',
     example: 'COD',
   })
-  @IsIn(['COD'], { message: 'Phương thức thanh toán phải là COD' })
-  paymentMethod = 'COD' as const;
+  @IsIn(['COD', 'ONLINE'], {
+    message: 'Phương thức thanh toán phải là COD hoặc ONLINE',
+  })
+  paymentMethod: 'COD' | 'ONLINE' = 'COD';
 
   @ApiProperty({
     maxLength: 4096,
@@ -42,6 +50,17 @@ export class CreateOrderCheckoutRequestDto {
   @IsNotEmpty()
   @MaxLength(4096)
   quoteFingerprint!: string;
+
+  @ApiPropertyOptional({
+    maxLength: 50,
+    description: 'Mã giảm giá (tuỳ chọn, tự chuẩn hoá trim + uppercase)',
+    example: 'WELCOME10',
+  })
+  @Transform(normalizeCouponCode)
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  couponCode?: string | null;
 
   @ApiPropertyOptional({
     maxLength: 500,
@@ -166,6 +185,24 @@ export class CheckoutOrderResponseDto {
 
   @ApiProperty({ example: '330000', description: 'Tổng tiền thanh toán' })
   totalAmount!: string;
+
+  @ApiPropertyOptional({
+    example: 800,
+    description: 'Thuế suất VAT tính bằng bps',
+  })
+  taxRateBps?: number | null;
+
+  @ApiPropertyOptional({
+    example: '24444',
+    description: 'Tiền thuế VAT bóc tách',
+  })
+  taxAmount?: string | null;
+
+  @ApiPropertyOptional({
+    example: '305556',
+    description: 'Tiền hàng trước thuế VAT',
+  })
+  netAmount?: string | null;
 
   @ApiPropertyOptional({
     example: 'Giao giờ hành chính giúp tôi',

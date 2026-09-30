@@ -22,6 +22,8 @@ Trang `/admin/users` đã kết nối các endpoint quản trị người dùng 
 
 Storefront `/products` và `/products/[slug]` đã dùng Catalog API typed thay cho mock: filter category/brand/size/color, sort, loading/error/empty state, variant color/size và giá decimal string. Admin `/admin/products` đã nối Product/Variant/Image API bằng typed client, gồm activation, SKU immutable, primary-image flow và các trạng thái loading/error/empty. Homepage và `/admin/categories` vẫn là placeholder/mock có chủ đích cho các lát UI tiếp theo.
 
+Ảnh do Catalog API trả về được render qua `components/shared/safe-image.tsx`: ảnh local vẫn dùng tối ưu của `next/image`, còn URL ngoài dùng `unoptimized` và tự fallback về ảnh catalog local nếu host không truy cập được. Không dùng wildcard remote host trong `next.config.ts`.
+
 Các form nhập liệu Auth và huỷ đơn dùng React Hook Form + Zod, không đọc field bằng `new FormData` hoặc giữ state field thủ công. API client dùng chung nằm tại `src/lib/api/`; `src/lib/api/error-ux.ts` là bản đồ tập trung từ error code sang thông báo UX, gồm `PAID_ORDER_CANNOT_CANCEL`, `INVALID_ORDER_TRANSITION`, `SHIPPING_QUOTE_STALE` và các lỗi conflict chính.
 
 Admin `/admin/inventory` và Warehouse `/warehouse/inventory` đã dùng Inventory API thật tại `MAIN_WAREHOUSE`: list theo SKU/Product, import, target adjustment và history phân trang/lọc. `reserved` chỉ đọc; UI không có generic stock patch, không optimistic update và refetch snapshot sau mutation.

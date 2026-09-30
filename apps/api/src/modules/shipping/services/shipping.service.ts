@@ -1,4 +1,11 @@
-import { HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  HttpStatus,
+  Injectable,
+  Logger,
+  NotFoundException,
+  Optional,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { ApiException } from '../../../common/errors/api-error';
 import { PrismaService } from '../../../database/prisma/prisma.service';
 import { AddressService } from '../../users/address.service';
@@ -8,15 +15,20 @@ import {
   ShippingQuoteResult,
 } from '../domain/shipping-provider.interface';
 import { ShippingQuoteResponseDto } from '../dto/shipping.dto';
+import { FallbackShippingProvider } from '../providers/fallback-shipping.provider';
 import { ShippingQuoteTokenService } from './shipping-quote-token.service';
 
 @Injectable()
 export class ShippingService {
+  private readonly logger = new Logger(ShippingService.name);
+
   constructor(
     private readonly addressService: AddressService,
     private readonly shippingProvider: ShippingProvider,
     private readonly prisma: PrismaService,
     private readonly quoteTokenService: ShippingQuoteTokenService,
+    @Optional() private readonly fallbackProvider?: FallbackShippingProvider,
+    @Optional() private readonly configService?: ConfigService,
   ) {}
 
   async calculateQuoteForUserAddress(
@@ -79,7 +91,7 @@ export class ShippingService {
         0,
       ),
     };
-    const quote = await this.shippingProvider.calculateQuote(params);
+    const quote = await this.calculateQuote(params);
     const signed = this.quoteTokenService.issue(
       userId,
       addressId,
@@ -102,6 +114,29 @@ export class ShippingService {
   async calculateQuote(
     params: CalculateShippingQuoteParams,
   ): Promise<ShippingQuoteResult> {
+    const ghnEnabled =
+      this.configService?.get<string>('GHN_ENABLED') !== 'false';
+    const fallbackEnabled =
+      this.configService?.get<string>('SHIPPING_FALLBACK_ENABLED') !== 'false';
+
+    if (ghnEnabled) {
+      try {
+        return await this.shippingProvider.calculateQuote(params);
+      } catch (err) {
+        this.logger.warn(
+          `Primary shipping provider quote failed: ${(err as Error).message}. Checking fallback...`,
+        );
+        if (fallbackEnabled && this.fallbackProvider) {
+          return await this.fallbackProvider.calculateQuote(params);
+        }
+        throw err;
+      }
+    }
+
+    if (fallbackEnabled && this.fallbackProvider) {
+      return await this.fallbackProvider.calculateQuote(params);
+    }
+
     return this.shippingProvider.calculateQuote(params);
   }
 

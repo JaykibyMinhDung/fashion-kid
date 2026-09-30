@@ -21,6 +21,7 @@ const ACTIVE_USER: AuthUserRecord = {
   status: 'ACTIVE',
   authVersion: 0,
   role: 'CUSTOMER',
+  emailVerifiedAt: new Date('2026-01-01'),
 };
 
 const TEST_CONFIG = {
@@ -145,6 +146,7 @@ describe('AuthService register and login', () => {
         phone: ACTIVE_USER.phone,
         avatarUrl: null,
         role: 'CUSTOMER',
+        emailVerifiedAt: ACTIVE_USER.emailVerifiedAt,
       },
     });
     expect(result.session.user).not.toHaveProperty('passwordHash');
@@ -378,6 +380,7 @@ describe('AuthService register and login', () => {
       phone: ACTIVE_USER.phone,
       avatarUrl: ACTIVE_USER.avatarUrl,
       role: ACTIVE_USER.role,
+      emailVerifiedAt: ACTIVE_USER.emailVerifiedAt,
     });
     expect(user).not.toHaveProperty('passwordHash');
     expect(user).not.toHaveProperty('status');

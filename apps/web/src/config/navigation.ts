@@ -1,7 +1,20 @@
 export type NavigationItem = {
   label: string;
   href: string;
-  icon?: "home" | "box" | "layers" | "warehouse" | "users" | "user" | "key" | "map" | "receipt";
+  icon?:
+    | "home"
+    | "box"
+    | "layers"
+    | "warehouse"
+    | "users"
+    | "user"
+    | "key"
+    | "map"
+    | "receipt"
+    | "ticket"
+    | "star"
+    | "scroll"
+    | "heart";
 };
 
 export const storeNavigation: NavigationItem[] = [
@@ -13,6 +26,8 @@ export const storeNavigation: NavigationItem[] = [
 
 export const accountNavigation: NavigationItem[] = [
   { label: "Đơn hàng của tôi", href: "/account/orders", icon: "receipt" },
+  { label: "Yêu thích", href: "/account/wishlist", icon: "heart" },
+  { label: "Đánh giá của tôi", href: "/account/reviews", icon: "star" },
   { label: "Hồ sơ cá nhân", href: "/account/profile", icon: "user" },
   { label: "Địa chỉ nhận hàng", href: "/account/addresses", icon: "map" },
   { label: "Đổi mật khẩu", href: "/account/password", icon: "key" },
@@ -25,6 +40,9 @@ export const adminNavigation: NavigationItem[] = [
   { label: "Sản phẩm", href: "/admin/products", icon: "box" },
   { label: "Danh mục", href: "/admin/categories", icon: "layers" },
   { label: "Tồn kho", href: "/admin/inventory", icon: "warehouse" },
+  { label: "Mã giảm giá", href: "/admin/coupons", icon: "ticket" },
+  { label: "Đánh giá", href: "/admin/reviews", icon: "star" },
+  { label: "Nhật ký kiểm toán", href: "/admin/audit-logs", icon: "scroll" },
 ];
 
 export const salesNavigation: NavigationItem[] = [

@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/shared/password-input";
 import { apiErrorMessage } from "@/lib/api/error-ux";
 import { registerSchema, type RegisterFormValues } from "../forms";
 import { landingPathForRole } from "../role-routing";
@@ -79,10 +80,9 @@ export function RegisterForm() {
         </label>
         <label className="block text-sm font-semibold">
           Mật khẩu
-          <Input
+          <PasswordInput
             className="mt-2"
             {...form.register("password")}
-            type="password"
             autoComplete="new-password"
             required
             aria-invalid={errors.password ? true : undefined}
@@ -90,10 +90,9 @@ export function RegisterForm() {
         </label>
         <label className="block text-sm font-semibold">
           Xác nhận mật khẩu
-          <Input
+          <PasswordInput
             className="mt-2"
             {...form.register("confirmPassword")}
-            type="password"
             autoComplete="new-password"
             required
             aria-invalid={errors.confirmPassword ? true : undefined}

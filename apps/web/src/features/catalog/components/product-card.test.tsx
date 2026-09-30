@@ -2,10 +2,23 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { ProductCard } from "@/features/catalog/components/product-card";
-import { featuredProducts } from "@/features/catalog/data/mock-products";
+import type { Product } from "@/types/catalog";
 
 describe("ProductCard", () => {
-  const product = featuredProducts[0];
+  const product: Product = {
+    id: "prd-001",
+    slug: "set-ao-khoac-coral",
+    name: "Set áo khoác Coral",
+    category: "Bộ mặc ngoài",
+    price: "349000",
+    compareAtPrice: "399000",
+    image: "/images/product-coral-cardigan.png",
+    imageAlt: "Áo khoác len màu coral phối cùng romper màu kem",
+    badge: "Mới",
+    colors: ["Coral", "Kem"],
+    sizes: ["80", "90", "100", "110"],
+    available: 18,
+  };
 
   it("shows the product identity, price and detail link", () => {
     render(<ProductCard product={product} />);

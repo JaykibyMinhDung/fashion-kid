@@ -34,3 +34,6 @@ next-env.d.ts
 
 # Generated Prisma client
 apps/api/src/generated/prisma/
+
+# document
+/documents

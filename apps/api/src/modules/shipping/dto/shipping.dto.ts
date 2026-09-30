@@ -45,3 +45,34 @@ export class ShippingQuoteResponseDto {
   @ApiProperty({ format: 'date-time' })
   expiresAt!: string;
 }
+
+export class GhnWebhookPayloadDto {
+  @ApiProperty({ example: 'GHN-ABC-123' })
+  @IsNotEmpty()
+  OrderCode!: string;
+
+  @ApiPropertyOptional({ example: 'ORD-20260915-000001' })
+  ClientOrderCode?: string;
+
+  @ApiProperty({ example: 'delivered' })
+  @IsNotEmpty()
+  Status!: string;
+
+  @ApiPropertyOptional()
+  Time?: string | number;
+
+  @ApiPropertyOptional()
+  TotalFee?: number;
+
+  @ApiPropertyOptional()
+  Reason?: string;
+
+  @ApiPropertyOptional()
+  ReasonCode?: string;
+
+  @ApiPropertyOptional()
+  Type?: string;
+
+  @ApiPropertyOptional()
+  CODAmount?: number;
+}

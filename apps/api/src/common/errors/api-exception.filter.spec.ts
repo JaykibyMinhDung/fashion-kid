@@ -44,11 +44,14 @@ describe('ApiExceptionFilter', () => {
     });
   });
 
-  it('maps framework validation errors without returning field values', () => {
+  it('maps framework validation errors and extracts details from message array', () => {
     const { host, json, status } = createHost();
 
     filter.catch(
-      new BadRequestException(['password must be longer than 15 characters']),
+      new BadRequestException([
+        'password must be longer than 15 characters',
+        'email must be an email',
+      ]),
       host,
     );
 
@@ -57,8 +60,25 @@ describe('ApiExceptionFilter', () => {
       statusCode: 400,
       code: 'VALIDATION_ERROR',
       message: 'Dữ liệu gửi lên không hợp lệ',
+      details: [
+        { field: '_', message: 'password must be longer than 15 characters' },
+        { field: '_', message: 'email must be an email' },
+      ],
       requestId: 'test-request-id',
     });
+  });
+
+  it('omits details when BadRequestException has no message array', () => {
+    const { host, json, status } = createHost();
+
+    filter.catch(new BadRequestException('Simple error string'), host);
+
+    expect(status).toHaveBeenCalledWith(400);
+    const body = (
+      json.mock.calls[0] as [{ code?: string; details?: unknown }]
+    )[0];
+    expect(body.code).toBe('VALIDATION_ERROR');
+    expect(body.details).toBeUndefined();
   });
 
   it('maps unknown errors to a generic response without stack or message', () => {

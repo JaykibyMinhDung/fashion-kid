@@ -21,6 +21,9 @@ describe("REG-ROLES-002: approved Day 6 navigation scope", () => {
       "/admin/products",
       "/admin/categories",
       "/admin/inventory",
+      "/admin/coupons",
+      "/admin/reviews",
+      "/admin/audit-logs",
     ]);
   });
 

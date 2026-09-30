@@ -15,6 +15,7 @@ export interface PublicUser {
   phone: string | null;
   avatarUrl: string | null;
   role: RoleCode;
+  emailVerifiedAt?: Date | null;
 }
 
 export interface AuthUserRecord extends PublicUser {
@@ -56,6 +57,10 @@ export const AUTH_AUDIT_ACTIONS = [
   'AUTH_REFRESH_REUSE_DETECTED',
   'AUTH_LOGOUT',
   'AUTH_PASSWORD_CHANGED',
+  'AUTH_PASSWORD_RESET_REQUESTED',
+  'AUTH_PASSWORD_RESET_SUCCESS',
+  'AUTH_EMAIL_VERIFIED',
+  'AUTH_EMAIL_VERIFICATION_RESENT',
 ] as const;
 
 export type AuthAuditAction = (typeof AUTH_AUDIT_ACTIONS)[number];
@@ -78,5 +83,6 @@ export function toPublicUser(user: AuthUserRecord): PublicUser {
     phone: user.phone,
     avatarUrl: user.avatarUrl,
     role: user.role,
+    emailVerifiedAt: user.emailVerifiedAt ?? null,
   };
 }

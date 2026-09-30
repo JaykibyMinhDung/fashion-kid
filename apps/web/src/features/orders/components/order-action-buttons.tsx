@@ -15,6 +15,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm, useWatch } from 'react-hook-form';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
+import { ConfirmDialog } from '@/components/shared/confirm-dialog';
 import { ApiClientError } from '@/lib/api/api-client';
 import { orderActionErrorMessage } from '@/lib/api/error-ux';
 import { useAuth } from '@/features/auth/session/auth-provider';
@@ -249,71 +250,47 @@ export function OrderActionButtons({
         )}
       </div>
 
-      {/* Cancel Modal / Form */}
-      {showCancelModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 backdrop-blur-xs">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-surface p-6 shadow-xl">
-            <h3 className="text-base font-bold text-foreground">
-              Xác nhận huỷ đơn hàng {order.orderNumber}
-            </h3>
-            <p className="mt-1 text-xs text-muted">
-              Hành động này sẽ giải phóng tồn kho đã giữ và huỷ giao dịch thanh toán. Vui lòng nhập lý do cụ thể.
-            </p>
-
-            <div className="mt-4">
-              <label
-                htmlFor="cancel-reason"
-                className="block text-xs font-semibold text-foreground mb-1.5"
-              >
-                Lý do huỷ đơn <span className="text-rose-600">*</span>
-              </label>
-              <textarea
-                id="cancel-reason"
-                rows={3}
-                maxLength={500}
-                {...cancelForm.register('reason')}
-                aria-invalid={cancelForm.formState.errors.reason ? true : undefined}
-                placeholder="Nhập lý do huỷ đơn hàng (tối đa 500 ký tự)..."
-                disabled={loadingAction === 'CANCEL' || cancelForm.formState.isSubmitting}
-                className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-hidden focus:ring-2 focus:ring-brand/20 disabled:opacity-50"
-              />
-              <div className="mt-1 text-right text-[11px] text-muted">
-                {cancelReason.length}/500 ký tự
-              </div>
-              {cancelForm.formState.errors.reason ? <p role="alert" className="mt-1 text-xs text-rose-700">{cancelForm.formState.errors.reason.message}</p> : null}
-            </div>
-
-            <div className="mt-5 flex justify-end gap-2">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowCancelModal(false);
-                  cancelForm.reset();
-                  setErrorMessage(null);
-                }}
-                disabled={loadingAction === 'CANCEL'}
-              >
-                Đóng
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                onClick={handleConfirmCancel}
-                disabled={loadingAction === 'CANCEL' || cancelForm.formState.isSubmitting}
-                className="bg-rose-600 hover:bg-rose-700 text-white"
-              >
-                {loadingAction === 'CANCEL' ? (
-                  <LoaderCircle className="h-4 w-4 animate-spin" />
-                ) : (
-                  'Xác nhận huỷ'
-                )}
-              </Button>
-            </div>
-          </div>
+      {/* Cancel confirmation dialog */}
+      <ConfirmDialog
+        open={showCancelModal}
+        title={`Xác nhận hủy đơn hàng ${order.orderNumber}`}
+        description="Hành động này sẽ giải phóng tồn kho đã giữ và hủy giao dịch thanh toán. Vui lòng nhập lý do cụ thể."
+        confirmLabel="Xác nhận hủy"
+        cancelLabel="Đóng"
+        variant="danger"
+        loading={loadingAction === 'CANCEL' || cancelForm.formState.isSubmitting}
+        onConfirm={handleConfirmCancel}
+        onCancel={() => {
+          setShowCancelModal(false);
+          cancelForm.reset();
+          setErrorMessage(null);
+        }}
+      >
+        <label
+          htmlFor="cancel-reason"
+          className="block text-xs font-semibold text-foreground mb-1.5"
+        >
+          Lý do hủy đơn <span className="text-rose-600">*</span>
+        </label>
+        <textarea
+          id="cancel-reason"
+          rows={3}
+          maxLength={500}
+          {...cancelForm.register('reason')}
+          aria-invalid={cancelForm.formState.errors.reason ? true : undefined}
+          placeholder="Nhập lý do hủy đơn hàng (tối đa 500 ký tự)..."
+          disabled={loadingAction === 'CANCEL' || cancelForm.formState.isSubmitting}
+          className="w-full rounded-xl border border-border bg-surface px-3 py-2 text-sm focus:border-brand focus:outline-hidden focus:ring-2 focus:ring-brand/20 disabled:opacity-50"
+        />
+        <div className="mt-1 text-right text-[11px] text-muted">
+          {cancelReason.length}/500 ký tự
         </div>
-      )}
+        {cancelForm.formState.errors.reason ? (
+          <p role="alert" className="mt-1 text-xs text-rose-700">
+            {cancelForm.formState.errors.reason.message}
+          </p>
+        ) : null}
+      </ConfirmDialog>
     </div>
   );
 }

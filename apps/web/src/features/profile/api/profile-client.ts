@@ -16,3 +16,15 @@ export function updateProfile(
     body: JSON.stringify(input),
   });
 }
+
+export function uploadAvatar(
+  request: AuthorizedRequest,
+  file: File,
+): Promise<Profile> {
+  const formData = new FormData();
+  formData.append("file", file);
+  return request<Profile>("/api/v1/me/avatar", {
+    method: "POST",
+    body: formData,
+  });
+}

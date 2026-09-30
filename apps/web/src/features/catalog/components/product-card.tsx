@@ -1,8 +1,8 @@
 import { Heart } from "lucide-react";
-import Image from "next/image";
 import Link from "next/link";
 
 import { Badge } from "@/components/ui/badge";
+import { SafeImage } from "@/components/shared/safe-image";
 import { formatCurrency } from "@/lib/utils";
 import type { Product } from "@/types/catalog";
 
@@ -15,7 +15,7 @@ export function ProductCard({ product }: { product: Product }) {
           aria-label={`Xem ${product.name}`}
           className="relative block h-full"
         >
-          <Image
+          <SafeImage
             src={product.image}
             alt={product.imageAlt}
             fill

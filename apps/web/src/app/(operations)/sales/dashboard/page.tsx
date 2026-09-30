@@ -1,41 +1,96 @@
-import { ShieldCheck } from "lucide-react";
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card";
+import { useCallback, useEffect, useState } from "react";
+import {
+  ClipboardList,
+  PackageCheck,
+  ShoppingCart,
+  ArrowRight,
+} from "lucide-react";
+
+import { useAuth } from "@/features/auth/session/auth-provider";
 import { PageHeader } from "@/components/ui/page-header";
-import { RoutePlaceholder } from "@/components/shared/route-placeholder";
+import { StatCard } from "@/components/ui/stat-card";
+import { Card, CardContent } from "@/components/ui/card";
+import { ButtonLink } from "@/components/ui/button";
+
+interface OrderSummary {
+  pending: number;
+  confirmed: number;
+  total: number;
+}
 
 export default function SalesDashboardPage() {
+  const { authorizedRequest } = useAuth();
+  const [summary, setSummary] = useState<OrderSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  const fetchSummary = useCallback(async () => {
+    try {
+      const [pendingRes, confirmedRes] = await Promise.allSettled([
+        authorizedRequest<{ total: number }>("/api/v1/operational/orders/?status=PENDING&limit=1"),
+        authorizedRequest<{ total: number }>("/api/v1/operational/orders/?status=CONFIRMED&limit=1"),
+      ]);
+      const pending = pendingRes.status === "fulfilled" ? pendingRes.value.total : 0;
+      const confirmed = confirmedRes.status === "fulfilled" ? confirmedRes.value.total : 0;
+      setSummary({ pending, confirmed, total: pending + confirmed });
+    } catch {
+      setSummary({ pending: 0, confirmed: 0, total: 0 });
+    } finally {
+      setLoading(false);
+    }
+  }, [authorizedRequest]);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional fetch-on-mount
+    fetchSummary();
+  }, [fetchSummary]);
+
   return (
     <div className="space-y-8">
       <PageHeader
         eyebrow="Sales Staff"
         title="Vận hành bán hàng"
-        description="Portal Sales đã được tách layout và navigation, nhưng nghiệp vụ Order chưa được triển khai trước khi tài liệu day tương ứng hoàn tất."
+        description="Xác nhận đơn hàng, xử lý yêu cầu và quản lý trạng thái đơn."
       />
-      <Card className="bg-[#fbf2e7] shadow-none">
-        <CardContent className="flex gap-4">
-          <span className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white text-[#a36b34]">
-            <ShieldCheck className="size-5" />
-          </span>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard
+          label="Chờ xác nhận"
+          value={loading ? "–" : String(summary?.pending ?? 0)}
+          detail="Đơn hàng mới cần xác nhận"
+          icon={ShoppingCart}
+        />
+        <StatCard
+          label="Đã xác nhận"
+          value={loading ? "–" : String(summary?.confirmed ?? 0)}
+          detail="Đơn chờ kho đóng gói"
+          icon={PackageCheck}
+        />
+        <StatCard
+          label="Tổng cần xử lý"
+          value={loading ? "–" : String(summary?.total ?? 0)}
+          detail="Đơn hàng đang chờ hành động"
+          icon={ClipboardList}
+        />
+      </div>
+
+      <Card>
+        <CardContent className="flex items-center justify-between p-6">
           <div>
-            <h2 className="font-bold">Ranh giới role đã sẵn sàng</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              Sales không có quyền chỉnh Product hoặc Inventory. Route Order Queue sẽ được mở khi contract Order được freeze.
+            <h3 className="font-semibold text-foreground">
+              Quản lý đơn hàng
+            </h3>
+            <p className="mt-1 text-sm text-muted">
+              Xem danh sách đơn hàng, xác nhận hoặc huỷ đơn.
             </p>
           </div>
+          <ButtonLink href="/sales/orders" variant="outline" size="sm">
+            Xem đơn hàng
+            <ArrowRight className="ml-2 size-4" />
+          </ButtonLink>
         </CardContent>
       </Card>
-      <RoutePlaceholder
-        eyebrow="Roadmap có kiểm soát"
-        title="Order Queue chưa mở"
-        description="Không giả định transition hoặc response shape trước tài liệu."
-        checklist={[
-          "Giữ riêng action Confirm/Cancel của Sales",
-          "Dùng chung Order Detail từ feature/order",
-          "Backend permission là security boundary",
-        ]}
-        documentStatus="Chờ tài liệu Order"
-      />
     </div>
   );
 }

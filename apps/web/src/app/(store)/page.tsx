@@ -4,7 +4,11 @@ import Link from "next/link";
 
 import { ButtonLink } from "@/components/ui/button";
 import { ProductCard } from "@/features/catalog/components/product-card";
-import { featuredProducts } from "@/features/catalog/data/mock-products";
+import {
+  getProducts,
+  type CatalogProductList,
+} from "@/features/catalog/api/catalog-client";
+import type { Product } from "@/types/catalog";
 
 const categories = [
   {
@@ -36,7 +40,33 @@ const commitments = [
   { icon: Truck, title: "Giao hàng toàn quốc", detail: "Theo dõi đơn hàng rõ ràng" },
 ];
 
-export default function HomePage() {
+function toFeaturedProduct(item: CatalogProductList["items"][number]): Product {
+  return {
+    id: item.id,
+    slug: item.slug,
+    name: item.name,
+    category: item.category.name,
+    price: item.minPrice,
+    image: item.primaryImage?.url ?? "/images/kids-fashion-hero.png",
+    imageAlt: item.primaryImage?.altText ?? item.name,
+    colors: [],
+    sizes: [],
+    available: 0,
+  };
+}
+
+async function loadFeaturedProducts(): Promise<Product[]> {
+  try {
+    const result = await getProducts({ limit: 3, sort: "newest" });
+    return result.items.map(toFeaturedProduct);
+  } catch {
+    return [];
+  }
+}
+
+export default async function HomePage() {
+  const featuredProducts = await loadFeaturedProducts();
+
   return (
     <>
       <section className="mx-auto max-w-[1440px] px-4 pt-5 sm:px-6 lg:px-8">
@@ -109,11 +139,15 @@ export default function HomePage() {
             Xem tất cả <ArrowRight className="size-4" />
           </ButtonLink>
         </div>
-        <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
-          {featuredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
-          ))}
-        </div>
+        {featuredProducts.length > 0 ? (
+          <div className="grid gap-7 sm:grid-cols-2 lg:grid-cols-3">
+            {featuredProducts.map((product) => (
+              <ProductCard key={product.id} product={product} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-sm text-muted">Sản phẩm mới sẽ sớm được cập nhật.</p>
+        )}
       </section>
 
       <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">

@@ -774,6 +774,13 @@ At most one primary image per Product.
 
 Frontend must never receive storage-provider secrets.
 
+Frontend image rendering:
+- use `next/image` for local/static images and configured first-party image hosts;
+- API-provided external image URLs must render through the shared safe-image boundary (including cart/checkout thumbnails);
+- external images use `unoptimized` unless their host is explicitly configured in `next.config.ts`;
+- failed external images fall back to the local catalog placeholder;
+- do not add a wildcard remote host to `next.config.ts` merely to silence a runtime error.
+
 ---
 
 ## 22. Address Rules

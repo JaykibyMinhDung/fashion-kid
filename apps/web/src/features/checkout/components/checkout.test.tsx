@@ -186,7 +186,7 @@ describe("CheckoutForm", () => {
     fireEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(handleSuccess).toHaveBeenCalledWith("ORD-20260907-000001");
+      expect(handleSuccess).toHaveBeenCalledWith("ORD-20260907-000001", "COD");
     });
   });
 });

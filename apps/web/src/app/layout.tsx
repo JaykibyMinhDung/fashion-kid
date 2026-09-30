@@ -13,8 +13,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="vi" className="h-full antialiased">
-      <body className="min-h-full bg-background text-foreground">
+    <html lang="vi" className="h-full antialiased" suppressHydrationWarning>
+      <body className="min-h-full bg-background text-foreground" suppressHydrationWarning>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

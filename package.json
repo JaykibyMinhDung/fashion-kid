@@ -31,5 +31,9 @@
     "db:migrate:deploy": "pnpm --filter api db:migrate:deploy",
     "db:migrate:reset": "pnpm --filter api db:migrate:reset",
     "db:seed": "pnpm --filter api db:seed"
+  },
+  "dependencies": {
+    "cloudinary": "^2.11.0",
+    "next-cloudinary": "^6.19.0"
   }
 }

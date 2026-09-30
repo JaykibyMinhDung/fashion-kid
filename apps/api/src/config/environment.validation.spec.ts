@@ -31,6 +31,18 @@ describe('validateEnvironment', () => {
       MAX_CART_ITEM_QTY: 99,
       SHIPPING_QUOTE_TTL_SECONDS: 300,
       SHIPPING_FALLBACK_FEE: '30000',
+      VAT_DEFAULT_RATE_BPS: 800,
+      MAIL_DRIVER: 'smtp',
+      MAIL_HOST: 'localhost',
+      MAIL_PORT: 1025,
+      MAIL_SECURE: false,
+      MAIL_FROM: 'Mầm Nhỏ <no-reply@mamnho.local>',
+      APP_PUBLIC_URL: 'http://localhost:3000',
+      MAIL_WORKER_INTERVAL_SEC: 15,
+      MAIL_WORKER_BATCH: 20,
+      PASSWORD_RESET_OTP_TTL_MIN: 10,
+      PASSWORD_RESET_LINK_TTL_MIN: 30,
+      EMAIL_VERIFICATION_TTL_HOURS: 24,
       COOKIE_SECURE: false,
     });
   });

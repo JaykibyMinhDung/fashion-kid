@@ -74,3 +74,41 @@ export const changePasswordSchema = z
   });
 
 export type ChangePasswordFormValues = z.infer<typeof changePasswordSchema>;
+
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().email("Vui lòng nhập địa chỉ email hợp lệ."),
+});
+export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
+
+export const verifyOtpSchema = z.object({
+  email: z.string().trim().email("Vui lòng nhập địa chỉ email hợp lệ."),
+  otp: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Mã OTP phải gồm đúng 6 chữ số."),
+});
+export type VerifyOtpFormValues = z.infer<typeof verifyOtpSchema>;
+
+export const resetPasswordSchema = z
+  .object({
+    newPassword: z
+      .string()
+      .min(PASSWORD_MIN_LENGTH, "Mật khẩu mới cần dài từ 15 đến 128 ký tự.")
+      .max(PASSWORD_MAX_LENGTH, "Mật khẩu mới cần dài từ 15 đến 128 ký tự."),
+    confirmPassword: z.string(),
+  })
+  .superRefine((values, context) => {
+    if (values.newPassword !== values.confirmPassword) {
+      context.addIssue({
+        code: "custom",
+        path: ["confirmPassword"],
+        message: "Xác nhận mật khẩu mới chưa khớp.",
+      });
+    }
+  });
+export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+
+export const resendVerificationSchema = z.object({
+  email: z.string().trim().email("Vui lòng nhập địa chỉ email hợp lệ."),
+});
+export type ResendVerificationFormValues = z.infer<typeof resendVerificationSchema>;
