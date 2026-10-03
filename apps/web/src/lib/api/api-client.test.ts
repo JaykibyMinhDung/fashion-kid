@@ -6,31 +6,34 @@ describe("apiRequest", () => {
     vi.unstubAllEnvs();
   });
 
-  it("parses JSON success and always includes credentials", async () => {
-    vi.stubEnv("NEXT_PUBLIC_API_URL", "http://localhost:8080");
-    const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
-      new Response(JSON.stringify({ value: "ok" }), {
-        status: 200,
-        headers: { "content-type": "application/json; charset=utf-8" },
-      }),
-    );
+  it.each(["http://localhost:8080", "http://localhost:18080"])(
+    "uses configured API origin %s and always includes credentials",
+    async (apiOrigin) => {
+      vi.stubEnv("NEXT_PUBLIC_API_URL", apiOrigin);
+      const fetchMock = vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(JSON.stringify({ value: "ok" }), {
+          status: 200,
+          headers: { "content-type": "application/json; charset=utf-8" },
+        }),
+      );
 
-    await expect(
-      apiRequest<{ value: string }>(
-        "/probe",
-        { method: "POST", body: JSON.stringify({ input: true }) },
-        fetchMock,
-      ),
-    ).resolves.toEqual({ value: "ok" });
-    expect(fetchMock).toHaveBeenCalledWith(
-      "http://localhost:8080/probe",
-      expect.objectContaining({ method: "POST", credentials: "include" }),
-    );
-    const requestInit = fetchMock.mock.calls[0]?.[1];
-    expect(new Headers(requestInit?.headers).get("content-type")).toBe(
-      "application/json",
-    );
-  });
+      await expect(
+        apiRequest<{ value: string }>(
+          "/probe",
+          { method: "POST", body: JSON.stringify({ input: true }) },
+          fetchMock,
+        ),
+      ).resolves.toEqual({ value: "ok" });
+      expect(fetchMock).toHaveBeenCalledWith(
+        `${apiOrigin}/probe`,
+        expect.objectContaining({ method: "POST", credentials: "include" }),
+      );
+      const requestInit = fetchMock.mock.calls[0]?.[1];
+      expect(new Headers(requestInit?.headers).get("content-type")).toBe(
+        "application/json",
+      );
+    },
+  );
 
   it("maps 204 to an undefined result without parsing a body", async () => {
     vi.stubEnv("NEXT_PUBLIC_API_URL", "http://localhost:8080");
@@ -105,7 +108,8 @@ describe("apiBlobRequest", () => {
       new Response(fakeBlobData, {
         status: 200,
         headers: {
-          "content-type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          "content-type":
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
           "content-disposition": 'attachment; filename="bao-cao-tong-hop.xlsx"',
         },
       }),

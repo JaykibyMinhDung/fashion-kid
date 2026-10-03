@@ -1,6 +1,7 @@
 "use client";
 
 import { RefreshCw, Search, SlidersHorizontal } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -27,18 +28,7 @@ type FilterState = {
   sort: "newest" | "price_asc" | "price_desc" | "name_asc";
 };
 
-const initialFilters: FilterState = {
-  q: "",
-  category: "",
-  brand: "",
-  size: "",
-  color: "",
-  sort: "newest",
-};
-
-function toCardProduct(
-  item: CatalogProductList["items"][number],
-): Product {
+function toCardProduct(item: CatalogProductList["items"][number]): Product {
   return {
     id: item.id,
     slug: item.slug,
@@ -63,68 +53,101 @@ function options<T extends { slug?: string; code?: string; name: string }>(
   }));
 }
 
-export function ProductsCatalog({ initialCategory = "" }: { initialCategory?: string }) {
-  const [filters, setFilters] = useState<FilterState>(() => ({
-    ...initialFilters,
-    category: initialCategory,
-  }));
-  const [result, setResult] = useState<CatalogProductList | null>(null);
+export function ProductsCatalog() {
+  // URL is the source of truth for both menu navigation and sidebar filters.
+  const search = useSearchParams().toString();
+  const filters = useMemo<FilterState>(() => {
+    const params = new URLSearchParams(search);
+    const sort = params.get("sort");
+    return {
+      q: params.get("q") ?? "",
+      category: params.get("category") ?? "",
+      brand: params.get("brand") ?? "",
+      size: params.get("size") ?? "",
+      color: params.get("color") ?? "",
+      sort:
+        sort === "price_asc" || sort === "price_desc" || sort === "name_asc"
+          ? sort
+          : "newest",
+    };
+  }, [search]);
+  const [response, setResponse] = useState<{
+    requestKey: string;
+    result: CatalogProductList | null;
+    error: string | null;
+  } | null>(null);
   const [metadata, setMetadata] = useState<{
     categories: CatalogCategory[];
     brands: CatalogBrand[];
     sizes: CatalogSize[];
     colors: CatalogColor[];
   } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [metadataError, setMetadataError] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
-  const query = useMemo(
-    () => ({ ...filters, page: 1, limit: 20 }),
-    [filters],
-  );
+  const query = useMemo(() => ({ ...filters, page: 1, limit: 20 }), [filters]);
 
-  async function loadProducts() {
-    setLoading(true);
-    setError(null);
-    try {
-      setResult(await getProducts(query));
-    } catch {
-      setError("Không thể tải danh sách sản phẩm. Bạn thử lại nhé.");
-    } finally {
-      setLoading(false);
-    }
-  }
+  const requestKey = `${JSON.stringify(query)}:${retryCount}`;
+  const loading = response?.requestKey !== requestKey;
+  const result = loading ? null : response?.result;
+  const error = loading ? null : (response?.error ?? metadataError);
 
   useEffect(() => {
+    let cancelled = false;
     void getCatalogFilters()
-      .then(setMetadata)
-      .catch(() => setError("Không thể tải bộ lọc Catalog. Bạn thử lại nhé."));
-  }, []);
+      .then((nextMetadata) => {
+        if (!cancelled) {
+          setMetadata(nextMetadata);
+          setMetadataError(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setMetadataError("Không thể tải bộ lọc Catalog. Bạn thử lại nhé.");
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [retryCount]);
 
   useEffect(() => {
     let cancelled = false;
     void getProducts(query)
       .then((nextResult) => {
         if (!cancelled) {
-          setResult(nextResult);
-          setError(null);
-          setLoading(false);
+          setResponse({ requestKey, result: nextResult, error: null });
         }
       })
       .catch(() => {
         if (!cancelled) {
-          setError("Không thể tải danh sách sản phẩm. Bạn thử lại nhé.");
-          setLoading(false);
+          setResponse({
+            requestKey,
+            result: null,
+            error: "Không thể tải danh sách sản phẩm. Bạn thử lại nhé.",
+          });
         }
       });
     return () => {
       cancelled = true;
     };
-  }, [query]);
+  }, [query, requestKey]);
 
-  const updateFilter = <K extends keyof FilterState>(key: K, value: FilterState[K]) => {
-    setLoading(true);
-    setFilters((current) => ({ ...current, [key]: value }));
+  const updateFilter = <K extends keyof FilterState>(
+    key: K,
+    value: FilterState[K],
+  ) => {
+    const params = new URLSearchParams(search);
+    if (value) params.set(key, value);
+    else params.delete(key);
+    params.delete("page");
+    const nextSearch = params.toString();
+    // Next integrates native history with useSearchParams without a page reload.
+    window.history.replaceState(
+      null,
+      "",
+      nextSearch ? `/products?${nextSearch}` : "/products",
+    );
   };
 
   return (
@@ -159,12 +182,18 @@ export function ProductsCatalog({ initialCategory = "" }: { initialCategory?: st
               <Select
                 className="mt-2"
                 value={filters.category}
-                onChange={(event) => updateFilter("category", event.target.value)}
+                onChange={(event) =>
+                  updateFilter("category", event.target.value)
+                }
               >
                 <option value="">Tất cả danh mục</option>
-                {(metadata ? options(metadata.categories, "slug") : []).map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
+                {(metadata ? options(metadata.categories, "slug") : []).map(
+                  (option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ),
+                )}
               </Select>
             </label>
             <label className="block text-sm font-semibold">
@@ -175,9 +204,13 @@ export function ProductsCatalog({ initialCategory = "" }: { initialCategory?: st
                 onChange={(event) => updateFilter("brand", event.target.value)}
               >
                 <option value="">Tất cả thương hiệu</option>
-                {(metadata ? options(metadata.brands, "slug") : []).map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
+                {(metadata ? options(metadata.brands, "slug") : []).map(
+                  (option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ),
+                )}
               </Select>
             </label>
             <label className="block text-sm font-semibold">
@@ -188,9 +221,13 @@ export function ProductsCatalog({ initialCategory = "" }: { initialCategory?: st
                 onChange={(event) => updateFilter("size", event.target.value)}
               >
                 <option value="">Tất cả size</option>
-                {(metadata ? options(metadata.sizes, "code") : []).map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
+                {(metadata ? options(metadata.sizes, "code") : []).map(
+                  (option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ),
+                )}
               </Select>
             </label>
             <label className="block text-sm font-semibold">
@@ -201,9 +238,13 @@ export function ProductsCatalog({ initialCategory = "" }: { initialCategory?: st
                 onChange={(event) => updateFilter("color", event.target.value)}
               >
                 <option value="">Tất cả màu</option>
-                {(metadata ? options(metadata.colors, "code") : []).map((option) => (
-                  <option key={option.value} value={option.value}>{option.label}</option>
-                ))}
+                {(metadata ? options(metadata.colors, "code") : []).map(
+                  (option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ),
+                )}
               </Select>
             </label>
           </div>
@@ -212,12 +253,15 @@ export function ProductsCatalog({ initialCategory = "" }: { initialCategory?: st
         <section aria-label="Danh sách sản phẩm">
           <div className="mb-6 flex items-center justify-between gap-4">
             <p className="text-sm text-muted" aria-live="polite">
-              <strong className="text-foreground">{result?.total ?? 0}</strong> sản phẩm
+              <strong className="text-foreground">{result?.total ?? 0}</strong>{" "}
+              sản phẩm
             </p>
             <Select
               className="max-w-48"
               value={filters.sort}
-              onChange={(event) => updateFilter("sort", event.target.value as FilterState["sort"])}
+              onChange={(event) =>
+                updateFilter("sort", event.target.value as FilterState["sort"])
+              }
               aria-label="Sắp xếp sản phẩm"
             >
               <option value="newest">Mới nhất</option>
@@ -228,7 +272,10 @@ export function ProductsCatalog({ initialCategory = "" }: { initialCategory?: st
           </div>
 
           {loading ? (
-            <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3" aria-label="Đang tải">
+            <div
+              className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3"
+              aria-label="Đang tải"
+            >
               {Array.from({ length: 3 }).map((_, index) => (
                 <div key={index} className="animate-pulse">
                   <div className="aspect-square rounded-[1.75rem] bg-surface-soft" />
@@ -240,14 +287,20 @@ export function ProductsCatalog({ initialCategory = "" }: { initialCategory?: st
           ) : error ? (
             <div className="rounded-[1.5rem] border border-border bg-surface p-8 text-center">
               <p className="text-muted">{error}</p>
-              <Button className="mt-5" onClick={() => void loadProducts()}>
+              <Button
+                className="mt-5"
+                onClick={() => setRetryCount((current) => current + 1)}
+              >
                 <RefreshCw className="size-4" /> Thử lại
               </Button>
             </div>
           ) : result?.items.length ? (
             <div className="grid gap-x-6 gap-y-10 sm:grid-cols-2 xl:grid-cols-3">
               {result.items.map((product) => (
-                <ProductCard key={product.id} product={toCardProduct(product)} />
+                <ProductCard
+                  key={product.id}
+                  product={toCardProduct(product)}
+                />
               ))}
             </div>
           ) : (
