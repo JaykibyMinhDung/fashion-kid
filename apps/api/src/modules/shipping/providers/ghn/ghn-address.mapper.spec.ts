@@ -188,6 +188,22 @@ describe('GhnAddressMapper (UT-MAP-01..06)', () => {
     );
   });
 
+  // UT-MAP-04b: smart fallback when wardName is actually a district name and addressLine has ward
+  it('UT-MAP-04b: should fallback to ward from addressLine when wardName matches a district', async () => {
+    const result = await mapper.resolveAddress({
+      addressLine: 'Dịch Vọng Cầu Giấy Hà Nội',
+      provinceCode: '',
+      provinceName: 'Hà Nội',
+      wardCode: '',
+      wardName: 'Cầu Giấy',
+    });
+
+    expect(result.districtId).toBe(1485);
+    expect(result.districtName).toBe('Quận Cầu Giấy');
+    expect(result.wardCode).toBe('11050');
+    expect(result.wardName).toBe('Phường Dịch Vọng');
+  });
+
   // UT-MAP-05: cached mapping hit avoids provider lookup
   it('UT-MAP-05: cached mapping hit avoids redundant provider lookups', async () => {
     const addr = {

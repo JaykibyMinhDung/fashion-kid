@@ -304,8 +304,37 @@ export class GhnAddressMapper {
       );
     }
 
-    // UT-MAP-04: no candidate -> fail
+    // UT-MAP-04: no candidate -> check smart fallback before failing
     if (candidates.length === 0) {
+      if (normWardName) {
+        const districtMatchingWardName = districts.find(
+          (d) =>
+            normalizeVietnamese(d.DistrictName) === normWardName ||
+            d.NameExtension?.some(
+              (ext) => normalizeVietnamese(ext) === normWardName,
+            ),
+        );
+
+        if (districtMatchingWardName) {
+          const wards = await this.getWards(districtMatchingWardName.DistrictID);
+          const matchedWards = wards.filter((w) => {
+            const wNorm = normalizeVietnamese(w.WardName);
+            if (wNorm && normAddressLine.includes(wNorm)) return true;
+            return w.NameExtension?.some((ext) => {
+              const extNorm = normalizeVietnamese(ext);
+              return extNorm && normAddressLine.includes(extNorm);
+            });
+          });
+
+          if (matchedWards.length === 1) {
+            return {
+              district: districtMatchingWardName,
+              ward: matchedWards[0],
+            };
+          }
+        }
+      }
+
       throw new ApiException(
         HttpStatus.BAD_REQUEST,
         'GHN_ADDRESS_MAPPING_FAILED',

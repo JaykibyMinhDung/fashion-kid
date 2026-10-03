@@ -1,10 +1,10 @@
 import Link from "next/link";
 
 const footerLinks = [
-  { label: "Về Mầm Nhỏ", href: "/" },
-  { label: "Hướng dẫn chọn size", href: "/products" },
-  { label: "Chính sách đổi trả", href: "/" },
-  { label: "Liên hệ", href: "/" },
+  { label: "Về Mầm Nhỏ", href: "/about" },
+  { label: "Hướng dẫn chọn size", href: "/size-guide" },
+  { label: "Chính sách đổi trả", href: "/return-policy" },
+  { label: "Liên hệ", href: "/contact" },
 ];
 
 export function StoreFooter() {

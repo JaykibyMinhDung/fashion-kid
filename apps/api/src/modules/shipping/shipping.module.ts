@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { OrdersModule } from '../orders/orders.module';
 import { UsersModule } from '../users/users.module';
+import { ShippingMasterDataController } from './controllers/shipping-master-data.controller';
 import { ShippingOperationalController } from './controllers/shipping-operational.controller';
 import { ShippingWebhookController } from './controllers/shipping-webhook.controller';
 import { ShippingProvider } from './domain/shipping-provider.interface';
@@ -17,6 +18,7 @@ import { ShippingController } from './shipping.controller';
   imports: [UsersModule, OrdersModule],
   controllers: [
     ShippingController,
+    ShippingMasterDataController,
     ShippingOperationalController,
     ShippingWebhookController,
   ],
