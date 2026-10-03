@@ -18,12 +18,17 @@ const BUSINESS_TABLES = [
   'colors',
   'coupon_usages',
   'coupons',
+  'email_outbox', // Day 30: 20260916053314_add_email_outbox_and_tokens
+  'email_verification_tokens', // Day 30
   'inventories',
   'inventory_transactions',
+  'invoice_counters', // Day 29: 20260916035300_add_vat_invoice
+  'invoices', // Day 29
   'order_counters',
   'order_items',
   'order_status_histories',
   'orders',
+  'password_reset_tokens', // Day 30
   'payment_transactions',
   'payments',
   'product_images',
@@ -64,7 +69,7 @@ describe('Day 16 database alignment (e2e)', () => {
     await prisma.$disconnect();
   });
 
-  it('contains exactly the 26 frozen business tables', async () => {
+  it('contains exactly the 31 business tables (26 frozen at Day 16 + 5 from Day 29/30 migrations)', async () => {
     const tables = await prisma.$queryRaw<TableRow[]>`
       SELECT "table_name"
       FROM "information_schema"."tables"

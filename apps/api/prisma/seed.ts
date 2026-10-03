@@ -155,6 +155,10 @@ async function seed(): Promise<void> {
       throw new Error(`Seed role not found: ${roleCode}`);
     }
 
+    // Tài khoản demo (@mam-nho.local) không nhận được email xác thực, nên đánh dấu
+    // sẵn là đã xác thực; nếu không, đăng nhập sẽ bị chặn với EMAIL_NOT_VERIFIED
+    // (luồng xác thực email thêm ở Day 30).
+    const emailVerifiedAt = new Date();
     const user = await prisma.user.upsert({
       where: { email },
       update: {
@@ -162,6 +166,7 @@ async function seed(): Promise<void> {
         fullName,
         passwordHash,
         status,
+        emailVerifiedAt,
       },
       create: {
         roleId,
@@ -169,6 +174,7 @@ async function seed(): Promise<void> {
         fullName,
         passwordHash,
         status,
+        emailVerifiedAt,
       },
     });
     userByEmail.set(email, user.id);

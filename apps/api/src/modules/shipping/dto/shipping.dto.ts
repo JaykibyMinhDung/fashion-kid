@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsUUID } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+} from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class CalculateShippingQuoteRequestDto {
@@ -52,6 +58,8 @@ export class GhnWebhookPayloadDto {
   OrderCode!: string;
 
   @ApiPropertyOptional({ example: 'ORD-20260915-000001' })
+  @IsOptional()
+  @IsString()
   ClientOrderCode?: string;
 
   @ApiProperty({ example: 'delivered' })
@@ -59,20 +67,31 @@ export class GhnWebhookPayloadDto {
   Status!: string;
 
   @ApiPropertyOptional()
+  @IsOptional()
   Time?: string | number;
 
   @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
   TotalFee?: number;
 
   @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   Reason?: string;
 
   @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   ReasonCode?: string;
 
   @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   Type?: string;
 
   @ApiPropertyOptional()
+  @IsOptional()
+  @IsNumber()
   CODAmount?: number;
 }

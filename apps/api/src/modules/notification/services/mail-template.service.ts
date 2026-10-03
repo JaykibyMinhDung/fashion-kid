@@ -174,6 +174,38 @@ const ORDER_CANCELLED_BODY = `
 <p>Mọi khoản thanh toán hoặc dữ liệu tồn kho liên quan đã được xử lý hoàn tất. Nếu cần hỗ trợ thêm, vui lòng liên hệ hotline 1900 xxxx.</p>
 `;
 
+const CONTACT_MESSAGE_BODY = `
+<h2>Tin nhắn liên hệ mới từ website</h2>
+<p>Mã phiếu: <strong>{{ticketId}}</strong> — nhận lúc {{receivedAt}}</p>
+<table>
+  <tbody>
+    <tr><th style="width: 140px;">Họ và tên</th><td>{{fullName}}</td></tr>
+    <tr><th>Số điện thoại</th><td>{{phone}}</td></tr>
+    <tr><th>Email</th><td>{{#if email}}{{email}}{{else}}<em>Khách không để lại email</em>{{/if}}</td></tr>
+    <tr><th>Chủ đề</th><td>{{topicLabel}}</td></tr>
+  </tbody>
+</table>
+<p><strong>Nội dung:</strong></p>
+<div style="background: #f9fafb; border-left: 4px solid #4f46e5; padding: 12px 16px; white-space: pre-wrap;">{{message}}</div>
+<p style="font-size: 13px; color: #6b7280;">Vui lòng phản hồi khách trong vòng 24 giờ làm việc qua số điện thoại hoặc email ở trên.</p>
+`;
+
+const CONTACT_RECEIVED_BODY = `
+<h2>Mầm Nhỏ đã nhận được tin nhắn của bạn</h2>
+<p>Xin chào <strong>{{fullName}}</strong>,</p>
+<p>Cảm ơn bạn đã liên hệ với Mầm Nhỏ. Chúng tôi đã ghi nhận yêu cầu của bạn với mã phiếu <strong>{{ticketId}}</strong> (chủ đề: {{topicLabel}}).</p>
+<p>Nội dung bạn đã gửi:</p>
+<div style="background: #f9fafb; border-left: 4px solid #4f46e5; padding: 12px 16px; white-space: pre-wrap;">{{message}}</div>
+<p>Bộ phận chăm sóc khách hàng sẽ phản hồi bạn trong vòng 24 giờ làm việc. Nếu cần hỗ trợ gấp, vui lòng gọi hotline <strong>1900 6868</strong> và đọc mã phiếu ở trên.</p>
+`;
+
+/** Giá trị do người dùng nhập đi vào tiêu đề email: bỏ xuống dòng để tránh header injection. */
+function singleLine(value: unknown): string {
+  const text =
+    typeof value === 'string' || typeof value === 'number' ? String(value) : '';
+  return text.replace(/[\r\n]+/g, ' ').trim();
+}
+
 @Injectable()
 export class MailTemplateService {
   private readonly layoutTemplate: HandlebarsTemplateDelegate;
@@ -247,6 +279,31 @@ export class MailTemplateService {
       ORDER_CANCELLED_BODY,
       (p) =>
         `Xin chào ${p.customerName as string}, đơn hàng #${p.orderNumber as string} đã bị huỷ. Lý do: ${(p.reason as string) || 'Theo yêu cầu'}.`,
+    );
+
+    this.registerTemplate(
+      'contact-message',
+      (p) =>
+        `[Liên hệ ${singleLine(p.ticketId)}] ${singleLine(p.topicLabel)} — ${singleLine(p.fullName)}`,
+      CONTACT_MESSAGE_BODY,
+      (p) =>
+        [
+          `Tin nhắn liên hệ mới ${p.ticketId as string} (${p.receivedAt as string})`,
+          `Họ tên: ${p.fullName as string}`,
+          `Điện thoại: ${p.phone as string}`,
+          `Email: ${(p.email as string | null) || 'không có'}`,
+          `Chủ đề: ${p.topicLabel as string}`,
+          '',
+          p.message as string,
+        ].join('\n'),
+    );
+
+    this.registerTemplate(
+      'contact-received',
+      (p) => `[Mầm Nhỏ] Đã nhận yêu cầu liên hệ ${singleLine(p.ticketId)}`,
+      CONTACT_RECEIVED_BODY,
+      (p) =>
+        `Xin chào ${p.fullName as string}, Mầm Nhỏ đã nhận yêu cầu liên hệ ${p.ticketId as string} (${p.topicLabel as string}). Chúng tôi sẽ phản hồi trong vòng 24 giờ làm việc. Hotline: 1900 6868.`,
     );
   }
 

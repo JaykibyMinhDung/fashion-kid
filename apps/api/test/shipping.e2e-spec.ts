@@ -45,6 +45,26 @@ describe('Shipping API & GHN Integration (e2e)', () => {
     prisma = app.get(PrismaService);
     ghnClient = app.get(GhnClient);
 
+    // e2e không gọi GHN thật: giả lập master data địa chỉ khớp địa chỉ test (Hà Nội / 11001)
+    jest
+      .spyOn(ghnClient, 'getProvinces')
+      .mockResolvedValue([
+        { ProvinceID: 201, ProvinceName: 'Hà Nội', Code: '01' },
+      ]);
+    jest.spyOn(ghnClient, 'getDistricts').mockResolvedValue([
+      {
+        DistrictID: 1482,
+        ProvinceID: 201,
+        DistrictName: 'Bắc Từ Liêm',
+        Code: '1482',
+      },
+    ]);
+    jest
+      .spyOn(ghnClient, 'getWards')
+      .mockResolvedValue([
+        { WardCode: '11001', DistrictID: 1482, WardName: 'Phường Cổ Nhuế 1' },
+      ]);
+
     const [customerRole, warehouseRole, adminRole, category, size, color] =
       await Promise.all([
         prisma.role.findUniqueOrThrow({ where: { code: 'CUSTOMER' } }),
@@ -131,7 +151,6 @@ describe('Shipping API & GHN Integration (e2e)', () => {
           create: {
             sku: `AKG-${suffix}`,
             price: 250000n,
-            originalPrice: 250000n,
             colorId: color.id,
             sizeId: size.id,
             weightGrams: 300,
@@ -193,7 +212,7 @@ describe('Shipping API & GHN Integration (e2e)', () => {
             sizeName: 'M',
             unitPrice: 250000n,
             quantity: 2,
-            lineTotal: 50000n,
+            lineTotal: 500000n,
           },
         },
         payment: {

@@ -22,7 +22,7 @@ export function TopProductsTable({
 
   return (
     <Card>
-      <CardContent>
+      <CardContent className="flex h-full flex-col">
         <div className="border-b border-border/50 pb-4">
           <h3 className="text-base font-bold">Top sản phẩm bán chạy</h3>
           <p className="text-xs text-muted">
@@ -31,7 +31,7 @@ export function TopProductsTable({
         </div>
 
         {items.length === 0 ? (
-          <div className="flex h-40 items-center justify-center text-sm text-muted">
+          <div className="flex min-h-40 flex-1 items-center justify-center text-sm text-muted">
             Chưa có sản phẩm nào bán ra trong khoảng thời gian này
           </div>
         ) : (

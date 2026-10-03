@@ -146,4 +146,21 @@ describe('validateEnvironment', () => {
       }),
     ).toThrow('COOKIE_SECURE must be true in production');
   });
+  it('validates the optional CONTACT_INBOX_EMAIL', () => {
+    expect(
+      validateEnvironment(validConfig).CONTACT_INBOX_EMAIL,
+    ).toBeUndefined();
+    expect(
+      validateEnvironment({
+        ...validConfig,
+        CONTACT_INBOX_EMAIL: ' cskh@mamnho.test ',
+      }).CONTACT_INBOX_EMAIL,
+    ).toBe('cskh@mamnho.test');
+    expect(() =>
+      validateEnvironment({
+        ...validConfig,
+        CONTACT_INBOX_EMAIL: 'not-an-email',
+      }),
+    ).toThrow('CONTACT_INBOX_EMAIL must be a valid email address');
+  });
 });

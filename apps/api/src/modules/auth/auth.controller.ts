@@ -94,7 +94,8 @@ export class AuthController {
   @Post('login')
   @Public()
   @SkipThrottle({ default: false })
-  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  // Theo DAC_TA_AUTH_RBAC: login 5 lần/phút theo IP + email chuẩn hoá
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @HttpCode(HttpStatus.OK)
   @ApiOkResponse({ type: AuthSessionResponseDto })
   async login(

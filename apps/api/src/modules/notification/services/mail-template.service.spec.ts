@@ -96,4 +96,38 @@ describe('MailTemplateService', () => {
       NotFoundException,
     );
   });
+  it('should render contact-message for the shop inbox with escaped user input', async () => {
+    const result = await service.render('contact-message', {
+      ticketId: 'LH-260925-K3QX7A',
+      fullName: 'Chị Trang\r\nBcc: attacker@evil.test',
+      phone: '0988123456',
+      email: null,
+      topic: 'doi-tra-hang',
+      topicLabel: 'Đổi trả hàng',
+      message: '<script>alert(1)</script>\nDòng 2',
+      receivedAt: '09:30:00 25/9/2026',
+    });
+
+    expect(result.subject).toContain('LH-260925-K3QX7A');
+    expect(result.subject).not.toMatch(/[\r\n]/);
+    expect(result.html).toContain('Khách không để lại email');
+    expect(result.html).toContain('&lt;script&gt;');
+    expect(result.html).not.toContain('<script>');
+    expect(result.text).toContain('0988123456');
+  });
+
+  it('should render contact-received confirmation for the customer', async () => {
+    const result = await service.render('contact-received', {
+      ticketId: 'LH-260925-K3QX7A',
+      fullName: 'Nguyễn Thu Trang',
+      topicLabel: 'Tư vấn chọn size',
+      message: 'Bé 3 tuổi mặc size nào?',
+    });
+
+    expect(result.subject).toContain('LH-260925-K3QX7A');
+    expect(result.html).toContain('Nguyễn Thu Trang');
+    expect(result.html).toContain('Bé 3 tuổi mặc size nào?');
+    expect(result.html).toContain('1900 6868');
+    expect(result.text).toContain('24 giờ');
+  });
 });

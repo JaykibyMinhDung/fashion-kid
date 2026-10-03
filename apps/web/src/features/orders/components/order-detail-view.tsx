@@ -416,11 +416,10 @@ export function OrderDetailView({
                 </div>
                 {order.shipping.shippingTrackingCode && !isCustomer && (
                   <Button
-                    size="sm"
+                    size="xs"
                     variant="outline"
                     onClick={handleSyncShipment}
                     disabled={isSyncingShipment}
-                    className="h-6 px-2 text-[11px]"
                   >
                     <RefreshCw
                       className={`h-3 w-3 mr-1 ${

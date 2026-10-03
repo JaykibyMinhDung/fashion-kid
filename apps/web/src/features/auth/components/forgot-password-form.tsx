@@ -1,5 +1,6 @@
 "use client";
 
+import { withToast } from "@/lib/toast/mutation-toast";
 import { ArrowRight, CheckCircle2, Mail } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
@@ -32,7 +33,10 @@ export function ForgotPasswordForm({
       if (onSubmitEmail) {
         await onSubmitEmail(values);
       } else {
-        await apiForgotPassword({ email: values.email });
+        await withToast(apiForgotPassword({ email: values.email }), {
+          success: "Nếu email đã đăng ký, mã khôi phục đã được gửi tới hộp thư của bạn",
+          error: "Không thể gửi yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.",
+        });
       }
       setSubmittedEmail(values.email);
     } catch (caught) {

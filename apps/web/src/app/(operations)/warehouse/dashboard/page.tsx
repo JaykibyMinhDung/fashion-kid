@@ -5,10 +5,14 @@ import { Boxes, PackageSearch, Warehouse, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 import { useAuth } from "@/features/auth/session/auth-provider";
+import { getInventory } from "@/features/inventory/api/inventory-client";
 import { PageHeader } from "@/components/ui/page-header";
 import { StatCard } from "@/components/ui/stat-card";
 import { Card, CardContent } from "@/components/ui/card";
 import { ButtonLink } from "@/components/ui/button";
+
+/** Ngưỡng "sắp hết" (khả dụng ≤ 5), khớp với báo cáo cảnh báo tồn kho. */
+const LOW_STOCK_THRESHOLD = 5;
 
 interface InventorySummary {
   totalSku: number;
@@ -23,17 +27,19 @@ export default function WarehouseDashboardPage() {
 
   const fetchSummary = useCallback(async () => {
     try {
-      const data = await authorizedRequest<{
-        items: { onHand: number; reserved: number }[];
-      }>("/api/v1/inventory/");
+      // Endpoint đúng là /api/v1/admin/inventory (quyền INVENTORY_READ, kho có quyền này).
+      // Sắp theo tồn khả dụng tăng dần: 100 dòng đầu chứa mọi SKU hết/sắp hết hàng,
+      // còn tổng số SKU lấy từ `total` (không phải số dòng của 1 trang).
+      const data = await getInventory(authorizedRequest, {
+        sort: "available:asc",
+        limit: 100,
+      });
       const items = data.items ?? [];
-      const totalSku = items.length;
+      const totalSku = data.total ?? items.length;
       const lowStock = items.filter(
-        (i) => i.onHand - i.reserved > 0 && i.onHand - i.reserved <= 5,
+        (i) => i.available > 0 && i.available <= LOW_STOCK_THRESHOLD,
       ).length;
-      const outOfStock = items.filter(
-        (i) => i.onHand - i.reserved <= 0,
-      ).length;
+      const outOfStock = items.filter((i) => i.available <= 0).length;
       setSummary({ totalSku, lowStock, outOfStock });
     } catch {
       setSummary({ totalSku: 0, lowStock: 0, outOfStock: 0 });

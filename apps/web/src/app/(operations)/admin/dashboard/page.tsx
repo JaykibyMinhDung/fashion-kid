@@ -187,14 +187,14 @@ export default function AdminDashboardPage() {
 
       {/* Charts Grid */}
       <div className="grid gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-7 [&>*]:h-full">
           <RevenueChart
             data={revenueData}
             loading={loading && !revenueData}
             onGranularityChange={handleGranularityChange}
           />
         </div>
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-5 [&>*]:h-full">
           <OrderStatusDistribution
             data={ordersData}
             loading={loading && !ordersData}
@@ -204,13 +204,13 @@ export default function AdminDashboardPage() {
 
       {/* Tables Grid */}
       <div className="grid gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-7 [&>*]:h-full">
           <TopProductsTable
             data={topProducts}
             loading={loading && !topProducts}
           />
         </div>
-        <div className="lg:col-span-5">
+        <div className="lg:col-span-5 [&>*]:h-full">
           <InventoryAlertsCard
             data={inventoryAlerts}
             loading={loading && !inventoryAlerts}

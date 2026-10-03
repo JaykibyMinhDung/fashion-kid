@@ -175,6 +175,17 @@ export function validateEnvironment(
       ? 24
       : parseInteger(config, 'EMAIL_VERIFICATION_TTL_HOURS', 1, 168);
 
+  const contactInboxEmail =
+    typeof config.CONTACT_INBOX_EMAIL === 'string'
+      ? config.CONTACT_INBOX_EMAIL.trim()
+      : '';
+  if (
+    contactInboxEmail.length > 0 &&
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactInboxEmail)
+  ) {
+    throw new Error('CONTACT_INBOX_EMAIL must be a valid email address');
+  }
+
   if (rememberRefreshInactivityDays > rememberRefreshTokenTtlDays) {
     throw new Error(
       'REMEMBER_REFRESH_INACTIVITY_DAYS cannot exceed REMEMBER_REFRESH_TOKEN_TTL_DAYS',
@@ -216,5 +227,6 @@ export function validateEnvironment(
     PASSWORD_RESET_LINK_TTL_MIN: passwordResetLinkTtlMin,
     EMAIL_VERIFICATION_TTL_HOURS: emailVerificationTtlHours,
     COOKIE_SECURE: cookieSecure,
+    CONTACT_INBOX_EMAIL: contactInboxEmail || undefined,
   };
 }

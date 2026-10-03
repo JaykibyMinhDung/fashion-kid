@@ -1,5 +1,6 @@
 "use client";
 
+import { withToast } from "@/lib/toast/mutation-toast";
 import { ArrowRight, CheckCircle2, KeyRound, Lock, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -73,10 +74,13 @@ export function ResetPasswordForm({
             email: values.email,
             otp: values.otp.trim(),
           })
-        : await apiVerifyResetOtp({
-            email: values.email,
-            otp: values.otp.trim(),
-          });
+        : await withToast(
+            apiVerifyResetOtp({
+              email: values.email,
+              otp: values.otp.trim(),
+            }),
+            { success: "Mã xác thực hợp lệ. Hãy đặt mật khẩu mới." },
+          );
       setActiveToken(result.resetToken);
     } catch (caught) {
       otpForm.setError("root.server", {
@@ -98,10 +102,13 @@ export function ResetPasswordForm({
           newPassword: values.newPassword,
         });
       } else {
-        await apiResetPassword({
-          token: activeToken,
-          newPassword: values.newPassword,
-        });
+        await withToast(
+          apiResetPassword({
+            token: activeToken,
+            newPassword: values.newPassword,
+          }),
+          { success: "Đặt lại mật khẩu thành công" },
+        );
       }
       setIsCompleted(true);
     } catch (caught) {

@@ -31,6 +31,7 @@ describe('Billing & Tax (VAT 8%) Integration (e2e)', () => {
   let adminId: string;
 
   let addressId: string;
+  let productId: string;
   let variantId: string;
   let testOrderId: string;
   let testOrderNumber: string;
@@ -121,7 +122,7 @@ describe('Billing & Tax (VAT 8%) Integration (e2e)', () => {
     });
 
     // 5. Create Product & Variant
-    const productId = randomUUID();
+    productId = randomUUID();
     await prisma.product.create({
       data: {
         id: productId,
@@ -182,6 +183,16 @@ describe('Billing & Tax (VAT 8%) Integration (e2e)', () => {
       await prisma.payment.deleteMany({ where: { orderId: testOrderId } });
       await prisma.orderItem.deleteMany({ where: { orderId: testOrderId } });
       await prisma.order.deleteMany({ where: { id: testOrderId } });
+    }
+    // Dọn sản phẩm test để không làm bẩn DB dùng chung (catalog e2e đếm sản phẩm public)
+    if (variantId) {
+      await prisma.inventoryTransaction.deleteMany({ where: { variantId } });
+      await prisma.cartItem.deleteMany({ where: { variantId } });
+      await prisma.inventory.deleteMany({ where: { variantId } });
+      await prisma.productVariant.deleteMany({ where: { id: variantId } });
+    }
+    if (productId) {
+      await prisma.product.deleteMany({ where: { id: productId } });
     }
     await prisma.$disconnect();
     await app.close();
@@ -308,7 +319,7 @@ describe('Billing & Tax (VAT 8%) Integration (e2e)', () => {
 
   it('6. Reporting tax endpoint returns tax aggregation', async () => {
     const res = await request(server)
-      .get('/api/v1/reporting/tax?from=2026-01-01&to=2026-12-31')
+      .get('/api/v1/admin/reports/tax?from=2026-01-01&to=2026-12-31')
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
@@ -321,7 +332,7 @@ describe('Billing & Tax (VAT 8%) Integration (e2e)', () => {
 
   it('7. Dashboard summary includes netRevenue and vatAmount', async () => {
     const res = await request(server)
-      .get('/api/v1/reporting/summary')
+      .get('/api/v1/admin/reports/summary')
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 

@@ -155,12 +155,12 @@ export function OrderStatusDistribution({
 
   return (
     <Card>
-      <CardContent className="p-6">
+      <CardContent className="flex h-full flex-col p-6">
         <h3 className="text-base font-semibold text-foreground mb-4">
           Phân bổ trạng thái đơn hàng
         </h3>
 
-        <div className="flex flex-col sm:flex-row items-center gap-6">
+        <div className="flex flex-1 flex-col sm:flex-row items-center gap-6">
           {/* Doughnut chart */}
           <div className="w-48 h-48 flex-shrink-0">
             <Doughnut
